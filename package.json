@@ -1,80 +1,15 @@
-# 🚀 كيف تنشرين الموقع للعامّة (مجانًا)
-
-الموقع فيه خادم (Node)، فما ينفع نرفعه على استضافة ملفات عادية.
-راح نستخدم **Render** — مجاني، بدون بطاقة، وينشر مباشرة من GitHub.
-
-الفكرة: نرفع الكود على **GitHub** → نربطه بـ **Render** → يعطينا رابط عام.
-
----
-
-## الجزء الأول: رفع المشروع على GitHub
-
-> بدون أوامر — كله من الموقع.
-
-1. سجّلي دخول على <https://github.com> (عندك حساب: JumanALH).
-2. اضغطي **New** (زر أخضر) لإنشاء مستودع جديد.
-3. اكتبي اسم: مثلًا `game-price-compare`، خليه **Public**، واضغطي **Create repository**.
-4. في الصفحة الجديدة اضغطي رابط **uploading an existing file**.
-5. اسحبي ملفات المشروع كلها داخل الصندوق:
-   - `server.js`
-   - `package.json`
-   - `package-lock.json`
-   - `README.md`
-   - `.gitignore`
-   - ومجلد `public` كامل (فيه `index.html`)
-   - ⚠️ **لا ترفعين مجلد `node_modules`** (لو موجود، تجاهليه — Render يبنيه بنفسه).
-6. اضغطي **Commit changes**. خلص، الكود صار على GitHub.
-
----
-
-## الجزء الثاني: النشر على Render
-
-1. افتحي <https://render.com> واضغطي **Get Started** → سجّلي بحساب **GitHub**
-   (أسهل طريقة عشان يوصل لمستودعاتك).
-2. من اللوحة اضغطي **New +** → اختاري **Web Service**.
-3. اختاري مستودع `game-price-compare` من القائمة → **Connect**.
-4. عبّي الإعدادات كذا:
-
-   | الحقل | القيمة |
-   |------|--------|
-   | **Name** | أي اسم (يصير جزء من الرابط) |
-   | **Region** | الأقرب لك (مثلًا Frankfurt) |
-   | **Branch** | `main` |
-   | **Runtime** | Node |
-   | **Build Command** | `npm install` |
-   | **Start Command** | `npm start` |
-   | **Instance Type** | **Free** |
-
-5. اضغطي **Create Web Service** وانتظري شوي لين يخلّص البناء (Build).
-6. لما يطلع **Live**، بيعطيك رابط شكله:
-   ```
-   https://game-price-compare.onrender.com
-   ```
-   هذا رابطك العام — أرسليه لأي أحد 🎉
-
----
-
-## ملاحظات مهمة
-
-- **النوم**: الخطة المجانية تخلي الموقع ينام بعد ١٥ دقيقة بدون زيارات، ويصحى
-  بأول زيارة خلال ~٣٠–٦٠ ثانية. أول زائر بعد النوم بيستنى شوي، وبعدها يصير سريع.
-  (لو تبين تمنعين النوم: خدمة زي UptimeRobot تزور الرابط كل ١٠ دقايق مجانًا.)
-- **التحديثات**: أي تعديل ترفعينه على GitHub، Render ينشره تلقائيًا.
-- **GOG**: نفس اللي شفناه — لو ضغط كثير يحجب مؤقتًا، والموقع يتعامل معها
-  (يعرض ستيم ويكمّل). التخزين المؤقت يخفف هالشي.
-- **الحدود المجانية**: ٧٥٠ ساعة تشغيل بالشهر — أكثر من كافية لموقع شخصي.
-
----
-
-## لو تبين طريقة أسرع بأوامر Git (اختياري)
-
-لو مثبتة Git على جهازك، من داخل مجلد المشروع:
-
-    git init
-    git add .
-    git commit -m "first commit"
-    git branch -M main
-    git remote add origin https://github.com/JumanALH/game-price-compare.git
-    git push -u origin main
-
-بعدها كمّلي الجزء الثاني (Render) عادي.
+{
+  "name": "game-price-compare",
+  "version": "2.0.0",
+  "description": "مقارنة أسعار الألعاب بين Steam و GOG بشكل مباشر",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
