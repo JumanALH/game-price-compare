@@ -1,382 +1,980 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>مقارنة أسعار الألعاب · Steam vs GOG</title>
+<title>GamePrice — Steam vs GOG Price Comparison &amp; Region Deals</title>
+<meta name="description" content="Compare live game prices between Steam and GOG, browse the hottest Summer Sale deals, and find the cheapest Steam region for any game." />
+<meta name="theme-color" content="#1a1d33" />
+<meta property="og:title" content="GamePrice — Steam vs GOG Price Comparison" />
+<meta property="og:description" content="Live price comparison, Summer Sale deals, and cheapest-region finder for Steam games." />
+<meta property="og:type" content="website" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 <style>
   :root {
-    --bg: #2d3250;
-    --panel: #424769;
-    --panel-2: #676f9d;
-    --text: #ffffff;
-    --muted: #b8bdd9;
+    --bg: #14172b;
+    --bg-2: #1a1d33;
+    --panel: #232744;
+    --panel-2: #2f3560;
+    --border: rgba(255, 255, 255, 0.07);
+    --text: #f2f3fa;
+    --muted: #9ca3c7;
     --accent: #f9b17a;
-    --accent-soft: rgba(249, 177, 122, 0.15);
+    --accent-2: #ff8e6e;
+    --accent-soft: rgba(249, 177, 122, 0.14);
     --steam: #8ecbff;
     --gog: #c9a9ff;
     --green: #7ee0b0;
-    --radius: 16px;
-    --shadow: 0 12px 34px rgba(0, 0, 0, 0.28);
+    --gold: #ffd76e;
+    --radius: 18px;
+    --shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f9;
+    --bg-2: #e5e9f5;
+    --panel: #ffffff;
+    --panel-2: #e2e6f4;
+    --border: rgba(28, 34, 78, 0.09);
+    --text: #1b2036;
+    --muted: #5d6584;
+    --accent: #e88b47;
+    --accent-2: #f06d4a;
+    --accent-soft: rgba(232, 139, 71, 0.13);
+    --steam: #1f6fbd;
+    --gog: #7a4fd0;
+    --green: #14875a;
+    --gold: #c98f1b;
+    --shadow: 0 12px 34px rgba(30, 40, 90, 0.1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: "Raleway", sans-serif; font-weight: 400;
+    font-family: "Outfit", system-ui, sans-serif;
     background: var(--bg); color: var(--text);
-    min-height: 100vh; padding: 26px 16px 70px;
+    min-height: 100vh; padding: 28px 16px 60px;
+    overflow-x: hidden;
+    transition: background 0.4s, color 0.4s;
   }
-  .wrap { max-width: 900px; margin: 0 auto; }
+  :root[data-theme="light"] .aurora { opacity: 0.55; }
 
-  header { text-align: center; margin: 14px 0 26px; }
-  header h1 {
-    font-weight: 800; font-size: 2rem;
-    display: inline-flex; align-items: center; gap: 10px;
+  /* ===== Animated aurora background ===== */
+  .aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; transform: translateZ(0); }
+  .aurora::before, .aurora::after, .aurora .orb {
+    content: ""; position: absolute; border-radius: 50%;
+    filter: blur(64px); opacity: 0.35; will-change: transform;
   }
-  header h1 .dot { color: var(--accent); }
-  header p { color: var(--muted); margin-top: 8px; font-weight: 500; }
+  .aurora::before {
+    width: 520px; height: 520px; top: -160px; left: -120px;
+    background: radial-gradient(circle, #f9b17a 0%, transparent 70%);
+    animation: drift1 26s ease-in-out infinite alternate;
+  }
+  .aurora::after {
+    width: 620px; height: 620px; bottom: -220px; right: -160px;
+    background: radial-gradient(circle, #6a5cff 0%, transparent 70%);
+    animation: drift2 32s ease-in-out infinite alternate;
+  }
+  .aurora .orb {
+    width: 420px; height: 420px; top: 38%; left: 52%;
+    background: radial-gradient(circle, #3a86ff 0%, transparent 70%);
+    opacity: 0.18; animation: drift3 38s ease-in-out infinite alternate;
+  }
+  @keyframes drift1 { to { transform: translate(90px, 70px) scale(1.15); } }
+  @keyframes drift2 { to { transform: translate(-80px, -60px) scale(1.1); } }
+  @keyframes drift3 { to { transform: translate(-120px, 60px) scale(1.2); } }
 
-  /* شريط التحكم: العملة + التبويبات */
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  /* ===== Header ===== */
+  header { text-align: center; margin: 10px 0 30px; }
+  .logo {
+    font-weight: 900; font-size: clamp(2rem, 5vw, 2.7rem); letter-spacing: -1px;
+    background: linear-gradient(100deg, #fff 15%, var(--accent) 45%, var(--accent-2) 60%, #fff 90%);
+    background-size: 220% auto; -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+    animation: shine 5s linear infinite;
+    display: inline-block;
+  }
+  @keyframes shine { to { background-position: -220% center; } }
+  :root[data-theme="light"] .logo {
+    background-image: linear-gradient(100deg, #1b2036 15%, #e88b47 45%, #f06d4a 60%, #1b2036 90%);
+  }
+  header p { color: var(--muted); margin-top: 8px; font-weight: 500; font-size: 1.02rem; }
+
+  /* Entrance animation (staggered) */
+  .enter { opacity: 0; transform: translateY(18px); animation: enter 0.7s var(--ease) forwards; }
+  .enter.d1 { animation-delay: 0.08s; }
+  .enter.d2 { animation-delay: 0.16s; }
+  .enter.d3 { animation-delay: 0.24s; }
+  .enter.d4 { animation-delay: 0.32s; }
+  @keyframes enter { to { opacity: 1; transform: none; } }
+
+  /* ===== Controls ===== */
   .controls {
     display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    justify-content: space-between; margin-bottom: 16px;
+    justify-content: space-between; margin-bottom: 18px;
   }
-  .tabs { display: flex; gap: 8px; background: var(--panel); padding: 6px; border-radius: 14px; }
+  .tabs {
+    display: flex; gap: 6px; background: var(--panel);
+    padding: 6px; border-radius: 16px; border: 1px solid var(--border);
+    backdrop-filter: blur(8px); flex-wrap: wrap; box-shadow: var(--shadow);
+  }
   .tab {
     border: none; cursor: pointer; font-family: inherit; font-weight: 600;
-    font-size: .92rem; color: var(--muted); background: transparent;
-    padding: 9px 16px; border-radius: 10px; transition: all .18s; white-space: nowrap;
+    font-size: 0.9rem; color: var(--muted); background: transparent;
+    padding: 10px 16px; border-radius: 11px; white-space: nowrap;
+    transition: color 0.25s, background 0.35s var(--ease), transform 0.2s var(--ease), box-shadow 0.3s;
   }
-  .tab:hover { color: var(--text); }
-  .tab.active { background: var(--accent); color: #2d3250; font-weight: 700; }
+  .tab:hover { color: var(--text); transform: translateY(-1px); }
+  .tab:active { transform: scale(0.96); }
+  .tab.active {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #22182a; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(249, 177, 122, 0.35);
+  }
+  .tab:focus-visible, .chip:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
 
   .cur-box { display: flex; align-items: center; gap: 8px; }
-  .cur-box label { color: var(--muted); font-weight: 600; font-size: .9rem; }
-  select {
-    font-family: inherit; font-weight: 700; font-size: .92rem;
-    background: var(--panel); color: var(--text); border: 2px solid var(--panel-2);
-    padding: 9px 12px; border-radius: 10px; cursor: pointer; outline: none;
+  .theme-btn {
+    border: 1px solid var(--border); cursor: pointer; font-size: 1.05rem;
+    background: var(--panel); color: var(--text); width: 42px; height: 42px;
+    border-radius: 12px; display: grid; place-items: center;
+    transition: transform 0.25s var(--ease), border-color 0.25s, box-shadow 0.25s;
   }
-  select:focus { border-color: var(--accent); }
+  .theme-btn:hover { border-color: var(--accent); transform: rotate(-14deg) scale(1.06); box-shadow: 0 6px 16px rgba(249, 177, 122, 0.2); }
+  .theme-btn:active { transform: scale(0.92); }
+  .cur-box label { color: var(--muted); font-weight: 600; font-size: 0.9rem; }
+  select {
+    font-family: inherit; font-weight: 700; font-size: 0.92rem;
+    background: var(--panel); color: var(--text); border: 2px solid var(--panel-2);
+    padding: 10px 12px; border-radius: 12px; cursor: pointer; outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+  }
+  select:hover { border-color: var(--accent); }
+  select:focus { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
 
+  /* ===== Search ===== */
   .search {
     display: flex; gap: 10px; background: var(--panel);
-    padding: 8px; border-radius: var(--radius); box-shadow: var(--shadow);
-    border: 2px solid transparent; transition: border-color .2s;
+    padding: 9px; border-radius: var(--radius); box-shadow: var(--shadow);
+    border: 2px solid transparent; backdrop-filter: blur(8px);
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s var(--ease);
   }
-  .search:focus-within { border-color: var(--accent); }
+  .search:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 14px 44px rgba(249, 177, 122, 0.18);
+    transform: translateY(-2px);
+  }
   .search input {
-    flex: 1; border: none; outline: none; font-family: inherit; font-weight: 500;
+    flex: 1; min-width: 0; border: none; outline: none; font-family: inherit; font-weight: 500;
     font-size: 1.05rem; padding: 12px 16px; color: var(--text); background: transparent;
   }
   .search input::placeholder { color: var(--muted); }
   .search button {
-    border: none; cursor: pointer; font-family: inherit; font-weight: 700;
-    font-size: 1rem; color: #2d3250; background: var(--accent);
-    padding: 0 28px; border-radius: 11px; transition: filter .2s, transform .1s;
+    position: relative; overflow: hidden;
+    border: none; cursor: pointer; font-family: inherit; font-weight: 800;
+    font-size: 1rem; color: #22182a;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    padding: 0 30px; border-radius: 12px;
+    transition: filter 0.2s, transform 0.15s var(--ease), box-shadow 0.3s;
   }
-  .search button:hover { filter: brightness(1.06); }
-  .search button:active { transform: scale(0.97); }
+  .search button::after {
+    content: ""; position: absolute; top: 0; left: -80%;
+    width: 45%; height: 100%; transform: skewX(-22deg);
+    background: rgba(255, 255, 255, 0.35);
+    transition: left 0.5s var(--ease);
+  }
+  .search button:hover { filter: brightness(1.07); box-shadow: 0 8px 22px rgba(249, 177, 122, 0.4); }
+  .search button:hover::after { left: 130%; }
+  .search button:active { transform: scale(0.95); }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+  /* ===== Chips ===== */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
   .chip {
     background: var(--panel); color: var(--muted); border: 1px solid var(--panel-2);
-    cursor: pointer; font-family: inherit; font-size: .85rem; font-weight: 500;
-    padding: 6px 14px; border-radius: 999px; transition: all .18s;
+    cursor: pointer; font-family: inherit; font-size: 0.84rem; font-weight: 500;
+    padding: 7px 15px; border-radius: 999px;
+    transition: all 0.25s var(--ease);
   }
-  .chip:hover { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .chip:hover {
+    background: var(--accent-soft); color: var(--accent); border-color: var(--accent);
+    transform: translateY(-2px) scale(1.04);
+    box-shadow: 0 6px 16px rgba(249, 177, 122, 0.18);
+  }
+  .chip:active { transform: scale(0.95); }
 
-  #status { text-align: center; margin: 28px 0; color: var(--muted); font-weight: 500; }
-  .spinner {
-    width: 34px; height: 34px; border: 4px solid var(--panel);
-    border-top-color: var(--accent); border-radius: 50%;
-    animation: spin .8s linear infinite; margin: 0 auto 12px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .note {
-    text-align: center; color: var(--muted); font-size: .8rem;
-    margin: 8px 0 0; font-weight: 500;
-  }
+  /* ===== Status / skeleton loading ===== */
+  #status { text-align: center; margin: 26px 0 4px; color: var(--muted); font-weight: 500; }
+  .note { text-align: center; color: var(--muted); font-size: 0.8rem; margin: 8px 0 0; font-weight: 500; }
   .warn { color: var(--accent); }
 
-  /* ===== بطاقات المقارنة (وضع البحث) ===== */
+  .skeletons { display: grid; gap: 14px; margin-top: 22px; }
+  .skeletons.grid3 { grid-template-columns: repeat(3, 1fr); }
+  .sk {
+    height: 120px; border-radius: var(--radius);
+    background: linear-gradient(100deg, var(--panel) 40%, var(--panel-2) 50%, var(--panel) 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+  .skeletons.grid3 .sk { height: 210px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  /* ===== Scroll reveal ===== */
+  .reveal { opacity: 0; transform: translateY(26px) scale(0.98); }
+  .reveal.shown {
+    opacity: 1; transform: none;
+    transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    transition-delay: var(--d, 0s);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    .reveal { opacity: 1; transform: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* ===== Summer Sale banner ===== */
+  .sale-banner {
+    position: relative; overflow: hidden; margin-top: 22px;
+    border-radius: var(--radius); padding: 26px 28px; text-align: center;
+    background: linear-gradient(115deg, #ff8e6e 0%, #f9b17a 35%, #ffd76e 70%, #ff8e6e 100%);
+    background-size: 260% 260%;
+    animation: saleflow 9s ease-in-out infinite;
+    box-shadow: 0 16px 44px rgba(255, 142, 110, 0.3);
+  }
+  @keyframes saleflow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .sale-banner .sun {
+    position: absolute; font-size: 3.4rem; top: 8px; left: 22px;
+    animation: float 4.5s ease-in-out infinite; opacity: 0.9;
+  }
+  .sale-banner .ball { position: absolute; font-size: 2.6rem; bottom: 6px; right: 26px; animation: float 5.5s ease-in-out 1s infinite; opacity: 0.85; }
+  @keyframes float { 0%,100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-12px) rotate(8deg); } }
+  .sale-banner h2 {
+    color: #2a1c14; font-weight: 900; font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .sale-banner p { color: rgba(42, 28, 20, 0.75); font-weight: 700; margin-top: 4px; font-size: 0.95rem; }
+
+  /* ===== Genre pills + load more ===== */
+  .genres { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+  .genre {
+    background: var(--panel); color: var(--muted); border: 1px solid var(--border);
+    cursor: pointer; font-family: inherit; font-size: 0.82rem; font-weight: 600;
+    padding: 7px 15px; border-radius: 999px;
+    transition: all 0.25s var(--ease);
+  }
+  .genre:hover { color: var(--text); border-color: var(--accent); transform: translateY(-2px); }
+  .genre.active {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #22182a; border-color: transparent; font-weight: 800;
+    box-shadow: 0 6px 16px rgba(249, 177, 122, 0.3);
+  }
+  .load-more-wrap { text-align: center; margin-top: 22px; }
+  .load-more {
+    border: 1px solid var(--border); cursor: pointer; font-family: inherit;
+    font-weight: 700; font-size: 0.95rem; color: var(--text);
+    background: var(--panel); padding: 13px 34px; border-radius: 14px;
+    transition: all 0.25s var(--ease); box-shadow: var(--shadow);
+  }
+  .load-more:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+  .load-more:active { transform: scale(0.96); }
+  .load-more[disabled] { opacity: 0.6; cursor: wait; }
+
+  /* ===== Favorites ===== */
+  .fav-btn {
+    position: absolute; top: 10px; left: 10px; z-index: 2;
+    width: 32px; height: 32px; border-radius: 10px; border: none; cursor: pointer;
+    display: grid; place-items: center; font-size: 1rem;
+    background: rgba(15, 17, 34, 0.55); backdrop-filter: blur(4px);
+    color: #fff; transition: transform 0.2s var(--ease), background 0.2s;
+  }
+  .fav-btn:hover { transform: scale(1.18); background: rgba(15, 17, 34, 0.8); }
+  .fav-btn:active { transform: scale(0.9); }
+  .fav-btn.on { animation: favpop 0.35s var(--ease); }
+  @keyframes favpop { 0% { transform: scale(0.6); } 60% { transform: scale(1.3); } 100% { transform: scale(1); } }
+  .fav-btn.inline { position: static; background: var(--panel-2); color: var(--text); flex-shrink: 0; }
+  .fav-btn.inline:hover { background: var(--accent-soft); }
+
+  .fav-row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 12px 16px; box-shadow: var(--shadow);
+    transition: transform 0.3s var(--ease), border-color 0.3s;
+  }
+  .fav-row:hover { transform: translateX(4px); border-color: rgba(249, 177, 122, 0.35); }
+  .fav-row img { width: 92px; height: 44px; object-fit: cover; border-radius: 8px; background: var(--bg-2); flex-shrink: 0; }
+  .fav-row .fname { font-weight: 700; }
+  .fav-row .fmeta { color: var(--muted); font-size: 0.78rem; font-weight: 500; margin-top: 2px; }
+  .fav-row .factions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; }
+  .fav-row .fbtn {
+    border: 1px solid var(--border); cursor: pointer; font-family: inherit;
+    font-weight: 700; font-size: 0.78rem; color: var(--text);
+    background: transparent; padding: 8px 14px; border-radius: 10px;
+    transition: all 0.2s var(--ease);
+  }
+  .fav-row .fbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .fav-row .fbtn.rm:hover { border-color: #ff7b7b; color: #ff7b7b; }
+  .fav-empty { text-align: center; color: var(--muted); margin-top: 40px; font-weight: 500; line-height: 2; }
+  .fav-empty .big { font-size: 2.6rem; }
+
+  /* ===== Compare cards ===== */
   .results { margin-top: 22px; display: flex; flex-direction: column; gap: 14px; }
   .card {
+    position: relative;
     background: var(--panel); border-radius: var(--radius);
-    box-shadow: var(--shadow); overflow: hidden; border: 1px solid rgba(255,255,255,.05);
+    box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border);
+    transition: transform 0.35s var(--ease), box-shadow 0.35s, border-color 0.35s;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(249, 177, 122, 0.35);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(249, 177, 122, 0.12);
   }
   .card-top {
     display: flex; align-items: center; gap: 14px; padding: 14px 18px;
-    border-bottom: 1px solid rgba(255,255,255,.07);
+    border-bottom: 1px solid var(--border);
   }
   .card-top img {
-    width: 96px; height: 46px; object-fit: cover; border-radius: 8px;
+    width: 96px; height: 46px; object-fit: cover; border-radius: 9px;
     background: var(--bg); flex-shrink: 0;
+    transition: transform 0.4s var(--ease);
   }
+  .card:hover .card-top img { transform: scale(1.07); }
   .card-top .name { font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
   .verdict {
-    margin-inline-start: auto; text-align: center; padding: 8px 14px;
-    border-radius: 11px; font-weight: 700; font-size: .85rem; white-space: nowrap;
+    margin-left: auto; text-align: center; padding: 8px 14px;
+    border-radius: 11px; font-weight: 700; font-size: 0.85rem; white-space: nowrap;
   }
-  .verdict.steam { background: rgba(142,203,255,.16); color: var(--steam); }
-  .verdict.gog { background: rgba(201,169,255,.16); color: var(--gog); }
-  .verdict.same { background: rgba(126,224,176,.16); color: var(--green); }
-  .verdict small { display: block; font-weight: 500; font-size: .72rem; opacity: .9; }
+  .verdict.steam { background: rgba(142, 203, 255, 0.16); color: var(--steam); }
+  .verdict.gog { background: rgba(201, 169, 255, 0.16); color: var(--gog); }
+  .verdict.same { background: rgba(126, 224, 176, 0.16); color: var(--green); }
+  .verdict small { display: block; font-weight: 500; font-size: 0.72rem; opacity: 0.9; }
 
   .prices { display: grid; grid-template-columns: 1fr 1px 1fr; }
   .store { padding: 16px 18px; text-align: center; position: relative; }
   .store.win::after {
-    content: "الأرخص ✓"; position: absolute; top: 10px; inset-inline-end: 12px;
-    font-size: .68rem; font-weight: 700; color: #2d3250;
-    background: var(--green); padding: 3px 8px; border-radius: 999px;
+    content: "Cheapest ✓"; position: absolute; top: 10px; right: 12px;
+    font-size: 0.66rem; font-weight: 800; color: #14261c;
+    background: var(--green); padding: 3px 9px; border-radius: 999px;
+    animation: pop 0.5s var(--ease);
   }
-  .divider { background: rgba(255,255,255,.09); }
-  .store .logo { font-weight: 800; font-size: .9rem; margin-bottom: 8px; letter-spacing: .3px; }
-  .store.steam-col .logo { color: var(--steam); }
-  .store.gog-col .logo { color: var(--gog); }
+  @keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  .divider { background: var(--border); }
+  .store .slogo { font-weight: 800; font-size: 0.9rem; margin-bottom: 8px; letter-spacing: 0.4px; }
+  .store.steam-col .slogo { color: var(--steam); }
+  .store.gog-col .slogo { color: var(--gog); }
   .price-now { font-size: 1.5rem; font-weight: 800; }
-  .price-old { color: var(--muted); text-decoration: line-through; font-size: .9rem; margin-inline-start: 6px; }
+  .price-old { color: var(--muted); text-decoration: line-through; font-size: 0.9rem; margin-left: 6px; }
   .discount {
-    display: inline-block; background: var(--accent); color: #2d3250; font-size: .72rem;
-    font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-top: 6px;
+    display: inline-block; background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #22182a; font-size: 0.72rem;
+    font-weight: 800; padding: 2px 9px; border-radius: 7px; margin-top: 6px;
   }
-  .na { color: var(--muted); font-size: .95rem; padding: 8px 0; }
+  .na { color: var(--muted); font-size: 0.95rem; padding: 8px 0; }
   .store a {
-    display: inline-block; margin-top: 10px; font-size: .8rem; color: var(--accent);
-    text-decoration: none; font-weight: 700;
+    display: inline-block; margin-top: 10px; font-size: 0.8rem; color: var(--accent);
+    text-decoration: none; font-weight: 700; transition: transform 0.2s var(--ease);
   }
-  .store a:hover { text-decoration: underline; }
+  .store a:hover { text-decoration: underline; transform: translateX(2px); }
 
-  /* ===== شبكة الخصومات (وضع الخصومات) ===== */
-  .grid { margin-top: 22px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  /* ===== Deals grid ===== */
+  .grid { margin-top: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .deal {
     background: var(--panel); border-radius: var(--radius); overflow: hidden;
-    box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,.05);
-    display: flex; flex-direction: column;
+    box-shadow: var(--shadow); border: 1px solid var(--border);
+    display: flex; flex-direction: column; position: relative;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s, border-color 0.35s;
   }
-  .deal img { width: 100%; height: 120px; object-fit: cover; background: var(--bg); }
-  .deal .body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-  .deal .dname { font-weight: 700; font-size: .95rem; line-height: 1.3; }
-  .deal .row { display: flex; align-items: center; gap: 8px; margin-top: auto; }
-  .deal .big-disc {
-    background: var(--accent); color: #2d3250; font-weight: 800;
-    font-size: .82rem; padding: 3px 8px; border-radius: 7px;
+  .deal:hover {
+    transform: translateY(-6px);
+    border-color: rgba(249, 177, 122, 0.4);
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.5);
   }
-  .deal .pnow { font-weight: 800; font-size: 1.1rem; }
-  .deal .pold { color: var(--muted); text-decoration: line-through; font-size: .82rem; }
-  .deal a {
-    color: var(--accent); text-decoration: none; font-weight: 700; font-size: .8rem; margin-top: 4px;
+  .deal .imgbox { overflow: hidden; height: 118px; background: var(--bg-2); }
+  .deal img {
+    width: 100%; height: 118px; object-fit: cover; display: block;
+    transition: transform 0.5s var(--ease);
   }
+  .deal:hover img { transform: scale(1.08); }
+  .deal .corner {
+    position: absolute; top: 10px; right: 10px; z-index: 1;
+    background: linear-gradient(120deg, var(--accent-2), var(--accent));
+    color: #22182a; font-weight: 900; font-size: 0.82rem;
+    padding: 4px 10px; border-radius: 9px;
+    box-shadow: 0 6px 16px rgba(255, 142, 110, 0.45);
+  }
+  .deal .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .deal .dname { font-weight: 700; font-size: 0.92rem; line-height: 1.35; }
+  .deal .row { display: flex; align-items: center; gap: 8px; margin-top: auto; flex-wrap: wrap; }
+  .deal .pnow { font-weight: 800; font-size: 1.08rem; }
+  .deal .pold { color: var(--muted); text-decoration: line-through; font-size: 0.8rem; }
+  .deal a { color: var(--accent); text-decoration: none; font-weight: 700; font-size: 0.78rem; }
   .deal a:hover { text-decoration: underline; }
 
-  footer { text-align: center; color: var(--muted); font-size: .78rem; margin-top: 44px; line-height: 1.8; font-weight: 500; }
+  /* ===== Regions view ===== */
+  .region-hero {
+    margin-top: 22px; display: flex; align-items: center; gap: 16px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow);
+  }
+  .region-hero img { width: 120px; height: 56px; object-fit: cover; border-radius: 10px; background: var(--bg); }
+  .region-hero .rname { font-weight: 800; font-size: 1.15rem; }
+  .region-hero a { color: var(--accent); font-size: 0.8rem; font-weight: 700; text-decoration: none; }
+  .region-hero a:hover { text-decoration: underline; }
 
+  .region-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .region-row {
+    display: flex; align-items: center; gap: 14px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 13px 18px;
+    transition: transform 0.3s var(--ease), border-color 0.3s, box-shadow 0.3s;
+  }
+  .region-row:hover {
+    transform: translateX(5px);
+    border-color: rgba(249, 177, 122, 0.35);
+    box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+  }
+  .region-row .rank {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    display: grid; place-items: center; font-weight: 900; font-size: 0.95rem;
+    background: var(--panel-2); color: var(--muted);
+  }
+  .region-row.r1 .rank { background: linear-gradient(135deg, #ffd76e, #f9b17a); color: #3a2a10; box-shadow: 0 4px 14px rgba(255, 215, 110, 0.4); }
+  .region-row.r2 .rank { background: linear-gradient(135deg, #d9dcec, #a8aec9); color: #262a3d; }
+  .region-row.r3 .rank { background: linear-gradient(135deg, #e0a884, #b97c55); color: #33200f; }
+  .region-row .flag { font-size: 1.5rem; }
+  .region-row .rn { font-weight: 700; }
+  .region-row .local { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+  .region-row .right { margin-left: auto; text-align: right; }
+  .region-row .usd { font-weight: 800; font-size: 1.1rem; }
+  .region-row .save {
+    display: inline-block; margin-top: 2px;
+    background: rgba(126, 224, 176, 0.16); color: var(--green);
+    font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 999px;
+  }
+  .region-row.saudi {
+    border-color: rgba(126, 224, 176, 0.4);
+    background: linear-gradient(100deg, rgba(126, 224, 176, 0.08), var(--panel) 45%);
+  }
+  .region-row.saudi .rank { background: rgba(126, 224, 176, 0.18); color: var(--green); font-size: 1.05rem; }
+  .region-note { margin-top: 14px; }
+
+  /* ===== View transitions ===== */
+  .view { animation: viewin 0.45s var(--ease); }
+  @keyframes viewin { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ===== Footer ===== */
+  footer {
+    text-align: center; color: var(--muted); font-size: 0.8rem;
+    margin-top: 52px; line-height: 2; font-weight: 500;
+    border-top: 1px solid var(--border); padding-top: 22px;
+  }
+  footer .credit { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+  footer .credit .heart { color: var(--accent-2); display: inline-block; animation: beat 1.6s ease-in-out infinite; }
+  @keyframes beat { 0%,100% { transform: scale(1); } 12% { transform: scale(1.25); } 24% { transform: scale(1); } }
+  footer a.x {
+    color: var(--accent); text-decoration: none; font-weight: 700;
+    transition: color 0.2s;
+  }
+  footer a.x:hover { color: var(--accent-2); text-decoration: underline; }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } .skeletons.grid3 { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) {
+    body { padding: 18px 12px 50px; }
     .card-top { flex-wrap: wrap; }
-    .verdict { margin-inline-start: 0; width: 100%; }
-    .grid { grid-template-columns: 1fr; }
+    .verdict { margin-left: 0; width: 100%; }
+    .grid, .skeletons.grid3 { grid-template-columns: 1fr; }
     .controls { flex-direction: column-reverse; align-items: stretch; }
     .tabs { justify-content: center; }
     .cur-box { justify-content: center; }
+    .search { flex-direction: column; }
+    .search button { padding: 13px; }
+    .region-hero { flex-wrap: wrap; }
+    .region-row { flex-wrap: wrap; gap: 10px; }
+    .region-row .right { width: 100%; text-align: left; margin-left: 48px; }
+    .fav-row { flex-wrap: wrap; }
+    .fav-row .factions { margin-left: 0; width: 100%; }
+    .fav-row .fbtn { flex: 1; }
+    .sale-banner .sun { font-size: 2.2rem; }
+    .sale-banner .ball { font-size: 1.8rem; }
+    /* big blurred layers are expensive on phone GPUs */
+    .aurora::before, .aurora::after { filter: blur(40px); animation: none; }
+    .aurora .orb { display: none; }
   }
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><div class="orb"></div></div>
+
 <div class="wrap">
-  <header>
-    <h1>مقارنة أسعار الألعاب <span class="dot">●</span></h1>
-    <p>الأسعار الحالية على Steam مقابل GOG</p>
+  <header class="enter">
+    <h1><span class="logo">GamePrice</span></h1>
+    <p>Live Steam vs GOG prices · Summer Sale deals · cheapest-region finder 🌍</p>
   </header>
 
-  <div class="controls">
-    <div class="tabs">
-      <button class="tab active" data-mode="search">بحث ومقارنة</button>
-      <button class="tab" data-mode="steam">أقوى خصومات Steam</button>
-      <button class="tab" data-mode="gog">أقوى خصومات GOG</button>
-    </div>
+  <div class="controls enter d1">
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab active" data-mode="search">🔍 Compare</button>
+      <button class="tab" data-mode="steam">🔥 Deals</button>
+      <button class="tab" data-mode="gog">💜 GOG</button>
+      <button class="tab" data-mode="regions">🌍 Regions</button>
+      <button class="tab" data-mode="favs">⭐ Favorites</button>
+    </nav>
     <div class="cur-box">
-      <label for="cur">العملة</label>
+      <label for="cur">Currency</label>
       <select id="cur">
-        <option value="USD" selected>USD · دولار</option>
-        <option value="EUR">EUR · يورو</option>
-        <option value="GBP">GBP · جنيه</option>
-        <option value="SAR">SAR · ريال</option>
-        <option value="AED">AED · درهم</option>
+        <option value="USD" selected>USD · $</option>
+        <option value="EUR">EUR · €</option>
+        <option value="GBP">GBP · £</option>
+        <option value="SAR">SAR · Riyal</option>
+        <option value="AED">AED · Dirham</option>
       </select>
+      <button id="themeBtn" class="theme-btn" aria-label="Toggle light / dark mode">🌙</button>
     </div>
   </div>
 
-  <div id="searchArea" class="search">
-    <input id="q" type="text" placeholder="اكتبي اسم اللعبة… مثال: Witcher 3" autocomplete="off" />
-    <button id="go">بحث</button>
+  <div id="searchArea" class="search enter d2">
+    <input id="q" type="text" placeholder="Search any game… e.g. Elden Ring" autocomplete="off" aria-label="Game name" />
+    <button id="go">Search</button>
   </div>
-  <div id="chips" class="chips">
-    <button class="chip">The Witcher 3</button>
+
+  <div id="chips" class="chips enter d3" aria-label="Popular games">
+    <button class="chip">Elden Ring</button>
     <button class="chip">Cyberpunk 2077</button>
+    <button class="chip">The Witcher 3</button>
     <button class="chip">Baldur's Gate 3</button>
+    <button class="chip">Red Dead Redemption 2</button>
+    <button class="chip">GTA V</button>
+    <button class="chip">Hogwarts Legacy</button>
+    <button class="chip">God of War</button>
+    <button class="chip">Sekiro</button>
     <button class="chip">Hades</button>
+    <button class="chip">Hollow Knight</button>
     <button class="chip">Stardew Valley</button>
+    <button class="chip">Resident Evil 4</button>
+    <button class="chip">Dying Light 2</button>
+    <button class="chip">It Takes Two</button>
+    <button class="chip">Terraria</button>
   </div>
 
-  <div id="status"></div>
-  <div id="results" class="results"></div>
-  <div id="grid" class="grid"></div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="content"></div>
 
-  <footer>
-    الأسعار مباشرة من ستيم و GOG لحظة الطلب · أسعار GOG بغير الدولار محوّلة بسعر الصرف الحالي<br />
-    أداة شخصية للمقارنة فقط
+  <footer class="enter d4">
+    <div class="credit">Crafted with <span class="heart">❤</span> by <strong>lcvrjl &amp; Claude</strong></div>
+    <a class="x" href="https://x.com/lcvrjl" target="_blank" rel="noopener noreferrer">𝕏 @lcvrjl</a><br />
+    Prices are fetched live from Steam &amp; GOG · Non-USD GOG prices are converted at the current exchange rate<br />
+    Regional prices are estimates in USD — a personal comparison tool, not affiliated with Valve or GOG
   </footer>
 </div>
 
 <script>
+  "use strict";
   const $ = (id) => document.getElementById(id);
   const curSel = $("cur");
   const statusEl = $("status");
-  const resultsEl = $("results");
-  const gridEl = $("grid");
+  const contentEl = $("content");
   const searchArea = $("searchArea");
+  const searchInput = $("q");
   const chips = $("chips");
   let mode = "search";
+  let deals = { genre: "all", start: 0, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale" };
+  let favIndex = {}; // name(lower) -> true, mirrors localStorage
+
+  // ---------- theme (persisted, no account needed) ----------
+  const themeBtn = $("themeBtn");
+  let theme;
+  try { theme = localStorage.getItem("gp:theme"); } catch (e) {}
+  if (!theme) theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  function applyTheme() {
+    document.documentElement.dataset.theme = theme;
+    themeBtn.textContent = theme === "dark" ? "🌙" : "☀️";
+    try { localStorage.setItem("gp:theme", theme); } catch (e) {}
+  }
+  themeBtn.addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; applyTheme(); });
+  applyTheme();
+
+  // ---------- favorites (saved on this device — no sign-up) ----------
+  function loadFavs() {
+    try { return JSON.parse(localStorage.getItem("gp:favs")) || []; }
+    catch (e) { return []; }
+  }
+  function saveFavs(list) {
+    try { localStorage.setItem("gp:favs", JSON.stringify(list.slice(0, 100))); } catch (e) {}
+    favIndex = {};
+    for (const f of list) favIndex[f.name.toLowerCase()] = true;
+  }
+  saveFavs(loadFavs());
+  function isFav(name) { return !!favIndex[String(name).toLowerCase()]; }
+  function toggleFav(item) {
+    const list = loadFavs();
+    const k = item.name.toLowerCase();
+    const i = list.findIndex((f) => f.name.toLowerCase() === k);
+    if (i >= 0) list.splice(i, 1);
+    else list.unshift({ name: item.name, image: item.image || null, url: item.url || null, price: item.price || null, at: Date.now() });
+    saveFavs(list);
+    return i < 0; // true = now favorited
+  }
+  function favBtnHTML(name, cls) {
+    const on = isFav(name);
+    return '<button class="fav-btn ' + (cls || "") + (on ? " on" : "") + '" data-fav="' + esc(name) + '" ' +
+      'aria-label="' + (on ? "Remove from" : "Add to") + ' favorites" aria-pressed="' + on + '">' +
+      (on ? "❤️" : "🤍") + "</button>";
+  }
+
+  // ---------- helpers ----------
+  const esc = (s) => String(s ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  const safeUrl = (u) => /^https:\/\//.test(String(u || "")) ? esc(u) : "#";
 
   const money = (n, sym, pos) =>
     n == null ? "—" : pos === "after"
       ? n.toFixed(2) + " " + sym
       : sym + n.toFixed(2);
 
-  function setBusy(msg) {
-    resultsEl.innerHTML = "";
-    gridEl.innerHTML = "";
-    statusEl.innerHTML = `<div class="spinner"></div>${msg}`;
+  // ---------- scroll reveal ----------
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (e.isIntersecting) { e.target.classList.add("shown"); io.unobserve(e.target); }
+    }
+  }, { threshold: 0.08 });
+  function observeReveals() {
+    contentEl.querySelectorAll(".reveal").forEach((el, i) => {
+      // anything already scrolled past must show instantly (e.g. after Load more)
+      if (el.getBoundingClientRect().bottom < 0) { el.classList.add("shown"); return; }
+      el.style.setProperty("--d", (Math.min(i % 6, 5) * 0.06) + "s");
+      io.observe(el);
+    });
   }
-  function clearAll() { resultsEl.innerHTML = ""; gridEl.innerHTML = ""; statusEl.innerHTML = ""; }
 
-  // ---------- وضع البحث ----------
+  // ---------- loading skeletons ----------
+  function setBusy(msg, kind) {
+    statusEl.textContent = msg;
+    const n = kind === "grid" ? 6 : 3;
+    contentEl.innerHTML =
+      '<div class="skeletons ' + (kind === "grid" ? "grid3" : "") + '">' +
+      Array.from({ length: n }, () => '<div class="sk"></div>').join("") +
+      "</div>";
+  }
+  function clearAll() { contentEl.innerHTML = ""; statusEl.textContent = ""; }
+
+  // ---------- compare view ----------
   function storeHTML(kind, data, sym, pos, isWinner) {
-    const label = kind === "steam" ? "Steam" : "GOG";
+    const label = kind === "steam" ? "STEAM" : "GOG";
     if (!data) {
-      return `<div class="store ${kind}-col"><div class="logo">${label}</div>
-        <div class="na">غير متوفرة</div></div>`;
+      return '<div class="store ' + kind + '-col"><div class="slogo">' + label + '</div>' +
+        '<div class="na">Not available</div></div>';
     }
     const old = data.base && data.discount > 0
-      ? `<span class="price-old">${money(data.base, sym, pos)}</span>` : "";
+      ? '<span class="price-old">' + money(data.base, sym, pos) + "</span>" : "";
     const disc = data.discount > 0
-      ? `<div class="discount">خصم ${data.discount}%</div>` : "";
-    return `<div class="store ${kind}-col ${isWinner ? "win" : ""}">
-      <div class="logo">${label}</div>
-      <div><span class="price-now">${money(data.final, sym, pos)}</span>${old}</div>
-      ${disc}
-      <div><a href="${data.url}" target="_blank" rel="noopener">فتح الصفحة ↗</a></div>
-    </div>`;
+      ? '<div class="discount">-' + data.discount + "%</div>" : "";
+    return '<div class="store ' + kind + "-col " + (isWinner ? "win" : "") + '">' +
+      '<div class="slogo">' + label + "</div>" +
+      '<div><span class="price-now">' + money(data.final, sym, pos) + "</span>" + old + "</div>" +
+      disc +
+      '<div><a href="' + safeUrl(data.url) + '" target="_blank" rel="noopener noreferrer">Open store page ↗</a></div>' +
+      "</div>";
   }
   function verdictHTML(row, sym, pos) {
     if (!row.steam || !row.gog) {
-      const only = row.steam ? "Steam فقط" : "GOG فقط";
-      return `<div class="verdict same">متوفرة على<br>${only}</div>`;
+      const only = row.steam ? "Steam only" : "GOG only";
+      return '<div class="verdict same">Available on<br>' + only + "</div>";
     }
-    if (row.cheaper === "same") return `<div class="verdict same">نفس السعر</div>`;
+    if (!row.cheaper) return '<div class="verdict same">Free / no price</div>';
+    if (row.cheaper === "same") return '<div class="verdict same">Same price</div>';
     const who = row.cheaper === "steam" ? "Steam" : "GOG";
-    return `<div class="verdict ${row.cheaper}">${who} أرخص
-      <small>توفّرين ${money(row.diff, sym, pos)}</small></div>`;
+    return '<div class="verdict ' + row.cheaper + '">' + who + " is cheaper" +
+      "<small>You save " + money(row.diff, sym, pos) + "</small></div>";
   }
   function renderSearch(data) {
     const rows = data.results || [];
-    if (!rows.length) { statusEl.textContent = "ما لقيت نتائج لهذي اللعبة 🎮"; return; }
+    if (!rows.length) { statusEl.textContent = "No results found for that game 🎮"; return; }
     let notes = "";
-    if (data.gogError) notes += `<p class="note warn">تعذّر جلب أسعار GOG الحين — النتائج تعرض ستيم فقط. جرّبي بعد شوي.</p>`;
-    if (data.converted) notes += `<p class="note">أسعار GOG محوّلة من الدولار بسعر الصرف الحالي.</p>`;
+    if (data.gogError) notes += '<p class="note warn">GOG prices are unavailable right now — showing Steam only. Try again shortly.</p>';
+    if (data.converted) notes += '<p class="note">GOG prices are converted from USD at the current exchange rate.</p>';
     statusEl.innerHTML = notes;
     const sym = data.symbol, pos = data.pos;
-    resultsEl.innerHTML = rows.map((row) => {
+    contentEl.innerHTML = '<div class="view results">' + rows.map((row) => {
+      const best = row.steam && row.steam.final != null ? row.steam : row.gog;
+      regItem(row.name, row.image, (row.steam || row.gog || {}).url, best && best.final != null ? money(best.final, sym, pos) : null);
       const img = row.image
-        ? `<img src="${row.image}" alt="" onerror="this.style.visibility='hidden'"/>` : "";
-      return `<div class="card">
-        <div class="card-top">${img}
-          <div class="name">${row.name}</div>
-          ${verdictHTML(row, sym, pos)}
-        </div>
-        <div class="prices">
-          ${storeHTML("steam", row.steam, sym, pos, row.cheaper === "steam")}
-          <div class="divider"></div>
-          ${storeHTML("gog", row.gog, sym, pos, row.cheaper === "gog")}
-        </div>
-      </div>`;
-    }).join("");
+        ? '<img src="' + safeUrl(row.image) + '" alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'"/>' : "";
+      return '<div class="card reveal">' +
+        '<div class="card-top">' + favBtnHTML(row.name, "inline") + img +
+        '<div class="name">' + esc(row.name) + "</div>" +
+        verdictHTML(row, sym, pos) +
+        "</div>" +
+        '<div class="prices">' +
+        storeHTML("steam", row.steam, sym, pos, row.cheaper === "steam") +
+        '<div class="divider"></div>' +
+        storeHTML("gog", row.gog, sym, pos, row.cheaper === "gog") +
+        "</div></div>";
+    }).join("") + "</div>";
+    observeReveals();
   }
 
-  // ---------- وضع الخصومات ----------
-  function renderDeals(data) {
-    if (data.error) { statusEl.textContent = data.error; return; }
+  // ---------- deals view ----------
+  const itemReg = {}; // name(lower) -> {name,image,url,price} for fav lookups
+  function regItem(name, image, url, price) {
+    itemReg[String(name).toLowerCase()] = { name, image, url, price };
+  }
+  function dealCardHTML(it, sym, pos) {
+    regItem(it.name, it.image, it.url, money(it.final, sym, pos));
+    const img = it.image
+      ? '<div class="imgbox"><img src="' + safeUrl(it.image) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.style.display=\'none\'"/></div>' : "";
+    const old = it.base ? '<span class="pold">' + money(it.base, sym, pos) + "</span>" : "";
+    return '<div class="deal reveal">' +
+      favBtnHTML(it.name) +
+      '<span class="corner">-' + (it.discount || 0) + "%</span>" + img +
+      '<div class="body">' +
+      '<div class="dname">' + esc(it.name) + "</div>" +
+      '<div class="row"><span class="pnow">' + money(it.final, sym, pos) + "</span>" + old + "</div>" +
+      '<a href="' + safeUrl(it.url) + '" target="_blank" rel="noopener noreferrer">Open store page ↗</a>' +
+      "</div></div>";
+  }
+  function saleBannerHTML(name, subtitle) {
+    return '<div class="sale-banner reveal">' +
+      '<span class="sun" aria-hidden="true">☀️</span><span class="ball" aria-hidden="true">🏖️</span>' +
+      "<h2>" + esc(name) + "</h2><p>" + subtitle + "</p></div>";
+  }
+
+  // GOG tab (top 48 deals)
+  function renderGogDeals(data) {
+    if (data.error) { statusEl.textContent = data.error; contentEl.innerHTML = ""; return; }
     const items = data.items || [];
-    if (!items.length) { statusEl.textContent = "ما فيه خصومات معروضة الحين."; return; }
-    let notes = "";
-    if (data.converted) notes = `<p class="note">الأسعار محوّلة من الدولار بسعر الصرف الحالي.</p>`;
-    statusEl.innerHTML = notes;
+    if (!items.length) { statusEl.textContent = "No deals to show right now."; contentEl.innerHTML = ""; return; }
+    statusEl.innerHTML = data.converted
+      ? '<p class="note">Prices converted from USD at the current exchange rate.</p>' : "";
     const sym = data.symbol, pos = data.pos;
-    gridEl.innerHTML = items.map((it) => {
-      const img = it.image ? `<img src="${it.image}" alt="" onerror="this.style.display='none'"/>` : "";
-      const old = it.base ? `<span class="pold">${money(it.base, sym, pos)}</span>` : "";
-      return `<div class="deal">${img}
-        <div class="body">
-          <div class="dname">${it.name}</div>
-          <div class="row">
-            <span class="big-disc">-${it.discount}%</span>
-            <span class="pnow">${money(it.final, sym, pos)}</span>${old}
-          </div>
-          <a href="${it.url}" target="_blank" rel="noopener">فتح الصفحة ↗</a>
-        </div>
-      </div>`;
-    }).join("");
+    contentEl.innerHTML = '<div class="view">' +
+      saleBannerHTML(data.saleName || "Sale", items.length + " hot deals live on GOG right now") +
+      '<div class="grid">' + items.map((it) => dealCardHTML(it, sym, pos)).join("") + "</div></div>";
+    observeReveals();
   }
 
-  // ---------- الطلبات ----------
+  // Steam tab — the FULL discount catalog, split by genre, paginated
+  const GENRE_LABELS = {
+    all: "All", action: "Action", rpg: "RPG", adventure: "Adventure",
+    strategy: "Strategy", simulation: "Simulation", shooter: "Shooter",
+    horror: "Horror", racing: "Racing", sports: "Sports", indie: "Indie", casual: "Casual",
+  };
+  function genrePillsHTML() {
+    return '<div class="genres" role="tablist" aria-label="Game genres">' +
+      Object.keys(GENRE_LABELS).map((g) =>
+        '<button class="genre' + (deals.genre === g ? " active" : "") + '" data-genre="' + g + '" role="tab" aria-selected="' + (deals.genre === g) + '">' +
+        GENRE_LABELS[g] + "</button>").join("") + "</div>";
+  }
+  function renderSteamDeals() {
+    const shown = deals.items.length;
+    const banner = saleBannerHTML(
+      deals.saleName,
+      deals.total.toLocaleString("en-US") + " discounted games on Steam · updates automatically"
+    );
+    const more = shown < deals.total
+      ? '<div class="load-more-wrap"><button class="load-more">Load more (' +
+        (deals.total - shown).toLocaleString("en-US") + " left)</button></div>"
+      : "";
+    contentEl.innerHTML = '<div class="view">' + banner + genrePillsHTML() +
+      '<div class="grid" id="dealGrid">' +
+      deals.items.map((it) => dealCardHTML(it, deals.sym, deals.pos)).join("") +
+      "</div>" + more + "</div>";
+    observeReveals();
+  }
+
+  // ---------- favorites view ----------
+  function renderFavs() {
+    const list = loadFavs();
+    statusEl.innerHTML = "";
+    if (!list.length) {
+      contentEl.innerHTML = '<div class="view fav-empty"><div class="big">🤍</div>' +
+        "Your favorites list is empty.<br>Tap the heart on any game to save it here — " +
+        "<strong>no account needed</strong>, it stays on this device.</div>";
+      return;
+    }
+    contentEl.innerHTML = '<div class="view"><div class="results">' + list.map((f) => {
+      regItem(f.name, f.image, f.url, f.price);
+      const img = f.image
+        ? '<img src="' + safeUrl(f.image) + '" alt="" loading="lazy" decoding="async" onerror="this.style.visibility=\'hidden\'"/>' : "<img alt=\"\" style=\"visibility:hidden\"/>";
+      const meta = (f.price ? f.price + " when saved · " : "") +
+        new Date(f.at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      return '<div class="fav-row reveal">' + img +
+        "<div><div class='fname'>" + esc(f.name) + "</div>" +
+        '<div class="fmeta">' + esc(meta) + "</div></div>" +
+        '<div class="factions">' +
+        '<button class="fbtn cmp" data-cmp="' + esc(f.name) + '">Compare now</button>' +
+        '<button class="fbtn rm" data-rm="' + esc(f.name) + '">Remove</button>' +
+        "</div></div>";
+    }).join("") + "</div>" +
+      '<p class="note region-note">Saved locally in your browser — no sign-up, no tracking.</p></div>';
+    observeReveals();
+  }
+
+  // ---------- regions view ----------
+  function regionRowHTML(r, rankLabel, extraClass) {
+    const save = r.vsSaudi != null && r.vsSaudi > 0
+      ? '<span class="save">' + r.vsSaudi + "% cheaper than SA</span>" : "";
+    return '<div class="region-row reveal ' + extraClass + '">' +
+      '<span class="rank">' + rankLabel + "</span>" +
+      '<span class="flag" aria-hidden="true">' + r.flag + "</span>" +
+      "<div><div class='rn'>" + esc(r.name) + "</div>" +
+      '<div class="local">' + r.local.toFixed(2) + " " + esc(r.currency) +
+      (r.discount ? " · -" + r.discount + "% off" : "") + "</div></div>" +
+      '<div class="right"><div class="usd">≈ $' + r.usd.toFixed(2) + "</div>" + save + "</div>" +
+      "</div>";
+  }
+  function renderRegions(data) {
+    if (data.error) { statusEl.textContent = data.error; contentEl.innerHTML = ""; return; }
+    statusEl.textContent = "";
+    const g = data.game;
+    const hero =
+      '<div class="region-hero reveal">' +
+      (g.image ? '<img src="' + safeUrl(g.image) + '" alt="" loading="lazy" decoding="async"/>' : "") +
+      '<div><div class="rname">' + esc(g.name) + "</div>" +
+      '<a href="' + safeUrl(g.url) + '" target="_blank" rel="noopener noreferrer">View on Steam ↗</a></div>' +
+      "</div>";
+    const rows = (data.regions || [])
+      .map((r, i) => regionRowHTML(r, String(i + 1), i === 0 ? "r1" : i === 1 ? "r2" : i === 2 ? "r3" : ""))
+      .join("");
+    const saudi = data.saudi ? regionRowHTML(data.saudi, "🏠", "saudi") : "";
+    contentEl.innerHTML = '<div class="view">' + hero +
+      '<div class="region-list">' + rows + saudi + "</div>" +
+      '<p class="note region-note">Top 5 cheapest Steam regions (converted to USD) vs your home region 🇸🇦 · ' +
+      "prices are estimates and buying cross-region may require a matching payment method.</p>" +
+      "</div>";
+    observeReveals();
+  }
+
+  // ---------- requests ----------
   async function doSearch(term) {
-    const q = (term != null ? term : $("q").value).trim();
+    const q = (term != null ? term : searchInput.value).trim();
     if (!q) return;
-    $("q").value = q;
-    setBusy("جاري جلب الأسعار الحالية…");
+    searchInput.value = q;
+    if (mode === "regions") return loadRegions(q);
+    setBusy("Fetching live prices…", "list");
     try {
-      const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&cur=${curSel.value}`);
+      const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&cur=" + curSel.value);
       const data = await r.json();
       clearAll();
       if (data.error) { statusEl.textContent = data.error; return; }
       renderSearch(data);
-    } catch (e) { statusEl.textContent = "تعذّر الاتصال بالخادم. تأكدي إنه شغّال."; }
+    } catch (e) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; }
   }
-  async function loadDeals(platform) {
-    setBusy(`جاري جلب أقوى خصومات ${platform === "steam" ? "Steam" : "GOG"}…`);
+  async function loadSteamDeals(reset, silent) {
+    if (reset) { deals.start = 0; deals.items = []; }
+    if (!silent) setBusy("Loading " + GENRE_LABELS[deals.genre] + " deals…", "grid");
     try {
-      const r = await fetch(`/api/discounts?platform=${platform}&cur=${curSel.value}`);
+      const r = await fetch("/api/deals?genre=" + deals.genre + "&start=" + deals.start + "&cur=" + curSel.value);
+      const data = await r.json();
+      if (mode !== "steam") return;
+      clearAll();
+      if (data.error && !data.items.length) { statusEl.textContent = data.error; return; }
+      deals.total = data.total;
+      deals.items = deals.items.concat(data.items);
+      deals.sym = data.symbol; deals.pos = data.pos; deals.saleName = data.saleName;
+      renderSteamDeals();
+    } catch (e) { if (!silent) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; } }
+  }
+  async function loadGogDeals(silent) {
+    if (!silent) setBusy("Loading the hottest GOG deals…", "grid");
+    try {
+      const r = await fetch("/api/discounts?platform=gog&cur=" + curSel.value);
+      const data = await r.json();
+      if (mode !== "gog") return;
+      clearAll();
+      renderGogDeals(data);
+    } catch (e) { if (!silent) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; } }
+  }
+  async function loadRegions(q) {
+    setBusy("Comparing prices across regions…", "list");
+    try {
+      const r = await fetch("/api/regions?q=" + encodeURIComponent(q));
       const data = await r.json();
       clearAll();
-      renderDeals(data);
-    } catch (e) { statusEl.textContent = "تعذّر الاتصال بالخادم. تأكدي إنه شغّال."; }
+      renderRegions(data);
+    } catch (e) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; }
   }
 
-  // ---------- التبويبات ----------
+  // ---------- tabs ----------
   function switchMode(m) {
     mode = m;
     document.querySelectorAll(".tab").forEach((t) =>
       t.classList.toggle("active", t.dataset.mode === m));
-    const isSearch = m === "search";
-    searchArea.style.display = isSearch ? "flex" : "none";
-    chips.style.display = isSearch ? "flex" : "none";
+    const showSearch = m === "search" || m === "regions";
+    searchArea.style.display = showSearch ? "flex" : "none";
+    chips.style.display = showSearch ? "flex" : "none";
     clearAll();
-    if (isSearch) { statusEl.textContent = "اكتبي اسم لعبة وابدئي المقارنة 👆"; }
-    else { loadDeals(m); }
+    if (m === "search") {
+      searchInput.placeholder = "Search any game… e.g. Elden Ring";
+      statusEl.textContent = "Type a game name to compare Steam vs GOG 👆";
+    } else if (m === "regions") {
+      searchInput.placeholder = "Find the cheapest region… e.g. Cyberpunk 2077";
+      statusEl.textContent = "Type a game to see the top 5 cheapest Steam regions 🌍";
+      const q = searchInput.value.trim();
+      if (q) loadRegions(q);
+    } else if (m === "favs") {
+      renderFavs();
+    } else if (m === "steam") {
+      loadSteamDeals(true);
+    } else {
+      loadGogDeals();
+    }
   }
 
-  // ---------- ربط الأحداث ----------
+  // ---------- events ----------
   $("go").addEventListener("click", () => doSearch());
-  $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+  searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
   document.querySelectorAll(".chip").forEach((c) =>
     c.addEventListener("click", () => doSearch(c.textContent)));
   document.querySelectorAll(".tab").forEach((t) =>
     t.addEventListener("click", () => switchMode(t.dataset.mode)));
   curSel.addEventListener("change", () => {
-    if (mode === "search") { const q = $("q").value.trim(); if (q) doSearch(q); }
-    else loadDeals(mode);
+    if (mode === "search") { const q = searchInput.value.trim(); if (q) doSearch(q); }
+    else if (mode === "regions") { const q = searchInput.value.trim(); if (q) loadRegions(q); }
+    else if (mode === "steam") loadSteamDeals(true);
+    else if (mode === "gog") loadGogDeals();
   });
+
+  // Delegated clicks: favorite hearts, genre pills, load-more, favorites actions
+  contentEl.addEventListener("click", (e) => {
+    const fav = e.target.closest(".fav-btn");
+    if (fav) {
+      const name = fav.dataset.fav;
+      const item = itemReg[name.toLowerCase()] || { name };
+      const on = toggleFav(item);
+      fav.textContent = on ? "❤️" : "🤍";
+      fav.classList.toggle("on", on);
+      fav.setAttribute("aria-pressed", on);
+      fav.setAttribute("aria-label", (on ? "Remove from" : "Add to") + " favorites");
+      return;
+    }
+    const genre = e.target.closest(".genre");
+    if (genre) { deals.genre = genre.dataset.genre; loadSteamDeals(true); return; }
+    const more = e.target.closest(".load-more");
+    if (more) {
+      more.disabled = true; more.textContent = "Loading…";
+      deals.start += 48;
+      loadSteamDeals(false, true);
+      return;
+    }
+    const cmp = e.target.closest("[data-cmp]");
+    if (cmp) { switchMode("search"); doSearch(cmp.dataset.cmp); return; }
+    const rm = e.target.closest("[data-rm]");
+    if (rm) { toggleFav({ name: rm.dataset.rm }); renderFavs(); return; }
+  });
+
+  // Deals refresh themselves — no manual edits ever needed
+  setInterval(() => {
+    if (mode === "steam") loadSteamDeals(true, true);
+    else if (mode === "gog") loadGogDeals(true);
+  }, 20 * 60 * 1000);
+
+  statusEl.textContent = "Type a game name to compare Steam vs GOG 👆";
 </script>
 </body>
 </html>

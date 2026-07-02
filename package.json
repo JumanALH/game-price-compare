@@ -1,7 +1,7 @@
 {
   "name": "game-price-compare",
-  "version": "2.0.0",
-  "description": "مقارنة أسعار الألعاب بين Steam و GOG بشكل مباشر",
+  "version": "3.0.0",
+  "description": "GamePrice — live Steam vs GOG price comparison, Summer Sale deals, and cheapest-region finder. Crafted by lcvrjl & Claude.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

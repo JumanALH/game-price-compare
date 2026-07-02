@@ -1,8 +1,11 @@
 // ============================================================
-//  مقارنة أسعار الألعاب  —  Steam  vs  GOG   (الخادم · v2)
-//  - عملات متعددة (الأساسي: دولار)
-//  - تبويب أقوى الخصومات لكل منصة
-//  - تخزين مؤقت (cache) لأن GOG يحجب بسرعة تحت الضغط
+//  GamePrice — Steam vs GOG price comparison  (server · v3)
+//  - Multi-currency (base: USD)
+//  - Top deals per platform (Summer Sale)
+//  - Steam multi-region comparison (top 5 cheapest + Saudi)
+//  - In-memory cache (GOG rate-limits aggressively)
+//  - Security: headers, rate limiting, input validation
+//  - Keep-alive self-ping for free hosting (Render)
 // ============================================================
 
 const express = require("express");
@@ -11,22 +14,73 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(express.static(path.join(__dirname, "public")));
+// ------------------------------------------------------------
+//  Security headers
+// ------------------------------------------------------------
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; img-src 'self' https: data:; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline'; " +
+      "connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+  );
+  next();
+});
 
-// --- العملات المدعومة ---
-// steamCC = رمز الدولة اللي يخلّي ستيم يرجّع السعر بهالعملة.
-// GOG يرجّع دولار دايم، فنحوّله بسعر الصرف.
+// ------------------------------------------------------------
+//  Simple per-IP rate limiter (60 API requests / minute)
+// ------------------------------------------------------------
+const hits = new Map();
+app.use("/api/", (req, res, next) => {
+  const ip = req.ip || "unknown";
+  const now = Date.now();
+  let e = hits.get(ip);
+  if (!e || e.reset < now) {
+    e = { count: 0, reset: now + 60_000 };
+    hits.set(ip, e);
+  }
+  if (++e.count > 60) {
+    return res.status(429).json({ error: "Too many requests — slow down a little." });
+  }
+  if (hits.size > 5000) {
+    for (const [k, v] of hits) if (v.reset < now) hits.delete(k);
+  }
+  next();
+});
+
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    maxAge: "1h",
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
+    },
+  })
+);
+
+// Health check — used by UptimeRobot / self-ping to keep the app awake
+app.get("/health", (req, res) => res.json({ ok: true, ts: Date.now() }));
+
+// ------------------------------------------------------------
+//  Currencies (display) — Steam returns local prices per cc,
+//  GOG always returns USD so we convert with live FX rates.
+// ------------------------------------------------------------
 const CURRENCIES = {
   USD: { symbol: "$", steamCC: "us", pos: "before" },
   EUR: { symbol: "€", steamCC: "de", pos: "before" },
   GBP: { symbol: "£", steamCC: "gb", pos: "before" },
-  SAR: { symbol: "﷼", steamCC: "sa", pos: "after" },
-  AED: { symbol: "د.إ", steamCC: "ae", pos: "after" },
+  SAR: { symbol: "SAR", steamCC: "sa", pos: "after" },
+  AED: { symbol: "AED", steamCC: "ae", pos: "after" },
 };
 
-// ============================================================
-//  تخزين مؤقت بسيط + أسعار الصرف
-// ============================================================
+// ------------------------------------------------------------
+//  Cache + FX rates
+// ------------------------------------------------------------
 const cache = new Map();
 function cacheGet(key) {
   const e = cache.get(key);
@@ -38,8 +92,12 @@ function cacheSet(key, val, ttlMs) {
   cache.set(key, { val, exp: Date.now() + ttlMs });
 }
 
-// أسعار احتياطية لو فشل API الصرف (SAR و AED ثابتة مربوطة بالدولار)
-const FALLBACK_RATES = { USD: 1, EUR: 0.92, GBP: 0.79, SAR: 3.75, AED: 3.6725 };
+// Fallback rates if the FX API is down (SAR/AED are pegged to USD)
+const FALLBACK_RATES = {
+  USD: 1, EUR: 0.92, GBP: 0.79, SAR: 3.75, AED: 3.6725,
+  UAH: 41, RUB: 80, KZT: 520, INR: 86, BRL: 5.5,
+  CNY: 7.2, PHP: 58, PLN: 3.9, TRY: 40, ARS: 1200, JPY: 155,
+};
 let fxCache = null;
 
 async function getRates() {
@@ -48,21 +106,25 @@ async function getRates() {
     const r = await fetch("https://open.er-api.com/v6/latest/USD");
     const j = await r.json();
     if (j && j.result === "success" && j.rates) {
-      const rates = {};
-      for (const c of Object.keys(CURRENCIES))
-        rates[c] = j.rates[c] ?? FALLBACK_RATES[c];
-      fxCache = { rates, exp: Date.now() + 6 * 3600 * 1000 }; // 6 ساعات
+      const rates = { ...FALLBACK_RATES, ...j.rates };
+      fxCache = { rates, exp: Date.now() + 6 * 3600 * 1000 }; // 6 hours
       return rates;
     }
   } catch (e) {
-    /* نستخدم الاحتياطي */
+    /* fall through to fallback */
   }
   return FALLBACK_RATES;
 }
 
-// ============================================================
-//  أدوات مساعدة
-// ============================================================
+// ------------------------------------------------------------
+//  Helpers
+// ------------------------------------------------------------
+function cleanQuery(raw) {
+  return String(raw || "")
+    .replace(/[\u0000-\u001f]/g, "")
+    .trim()
+    .slice(0, 100);
+}
 function normalize(s) {
   return (s || "")
     .toLowerCase()
@@ -85,23 +147,23 @@ function pct(base, final) {
   return Math.round((1 - final / base) * 100);
 }
 
-// GOG يحجب بسرعة → نحاول مرتين مع مهلة صغيرة
+// GOG rate-limits quickly → retry once with a small delay
 async function fetchGog(url) {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const r = await fetch(url, { headers: { Accept: "application/json" } });
       if (r.ok) return await r.json();
     } catch (e) {
-      /* نعيد المحاولة */
+      /* retry */
     }
     await new Promise((res) => setTimeout(res, 600));
   }
   throw new Error("GOG unavailable");
 }
 
-// ============================================================
-//  البحث
-// ============================================================
+// ------------------------------------------------------------
+//  Search
+// ------------------------------------------------------------
 async function searchSteam(q, cc) {
   const url =
     "https://store.steampowered.com/api/storesearch/?term=" +
@@ -115,6 +177,7 @@ async function searchSteam(q, cc) {
       let base = null, final = null;
       if (i.price) { base = i.price.initial / 100; final = i.price.final / 100; }
       return {
+        id: i.id,
         name: i.name,
         image: i.tiny_image || null,
         base, final,
@@ -124,7 +187,7 @@ async function searchSteam(q, cc) {
     });
 }
 
-// GOG دايم بالدولار، والتحويل يصير عند العرض
+// GOG is always USD; conversion happens at render time
 async function searchGogUSD(q) {
   const url =
     "https://catalog.gog.com/v1/catalog?query=" +
@@ -170,7 +233,7 @@ function buildRow(name, image, steam, gog, rate) {
 }
 
 app.get("/api/search", async (req, res) => {
-  const q = (req.query.q || "").trim();
+  const q = cleanQuery(req.query.q);
   const cur = (req.query.cur || "USD").toUpperCase();
   const c = CURRENCIES[cur] || CURRENCIES.USD;
   if (!q) return res.json({ results: [] });
@@ -185,7 +248,7 @@ app.get("/api/search", async (req, res) => {
 
     const steam = await searchSteam(q, c.steamCC);
 
-    // GOG قد يفشل → ما نوقف الموقع، نكمّل بنتائج ستيم
+    // GOG may fail → keep going with Steam-only results
     let gog = [];
     let gogError = false;
     try { gog = await searchGogUSD(q); }
@@ -217,43 +280,152 @@ app.get("/api/search", async (req, res) => {
       results, currency: cur, symbol: c.symbol, pos: c.pos,
       converted: cur !== "USD", gogError,
     };
-    cacheSet(key, payload, 10 * 60 * 1000); // 10 دقائق
+    cacheSet(key, payload, 10 * 60 * 1000); // 10 minutes
     res.json(payload);
   } catch (e) {
-    res.status(500).json({ error: "صار خطأ أثناء جلب الأسعار: " + e.message });
+    res.status(500).json({ error: "Something went wrong while fetching prices. Please try again." });
   }
 });
 
-// ============================================================
-//  أقوى الخصومات لكل منصة
-// ============================================================
+// ------------------------------------------------------------
+//  Seasonal sale name — rotates automatically, no manual edits
+// ------------------------------------------------------------
+function saleName() {
+  const m = new Date().getMonth(); // 0-11
+  if (m >= 5 && m <= 7) return "Summer Sale";
+  if (m >= 2 && m <= 4) return "Spring Sale";
+  if (m >= 8 && m <= 10) return "Autumn Sale";
+  return "Winter Sale";
+}
+
+// ------------------------------------------------------------
+//  Full Steam deals catalog, filterable by genre (like Steam's
+//  own store search). Covers EVERY discounted game, paginated.
+// ------------------------------------------------------------
+const GENRES = {
+  all: null,
+  action: 19,
+  rpg: 122,
+  adventure: 21,
+  strategy: 9,
+  simulation: 599,
+  shooter: 1774,
+  horror: 1667,
+  racing: 699,
+  sports: 701,
+  indie: 492,
+  casual: 597,
+};
+
+function decodeEntities(s) {
+  return String(s)
+    .replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+}
+
+async function steamAllDeals(cc, tag, start) {
+  const url =
+    "https://store.steampowered.com/search/results/?query&start=" + start +
+    "&count=48&specials=1&infinite=1&json=1&ndl=1&cc=" + cc + "&l=en" +
+    (tag ? "&tags=" + tag : "");
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const j = await r.json();
+  const html = (j && j.results_html) || "";
+  const items = [];
+  for (const chunk of html.split('<a href="').slice(1)) {
+    const appid = (chunk.match(/data-ds-appid="(\d+)"/) || [])[1];
+    const title = (chunk.match(/<span class="title">([^<]+)<\/span>/) || [])[1];
+    const finalC = (chunk.match(/data-price-final="(\d+)"/) || [])[1];
+    const disc = (chunk.match(/data-discount="(\d+)"/) || [])[1];
+    const img = (chunk.match(/<img src="([^"]+)"/) || [])[1];
+    if (!appid || !title) continue;
+    const discount = disc ? parseInt(disc, 10) : 0;
+    if (discount <= 0) continue;
+    const final = finalC ? parseInt(finalC, 10) / 100 : null;
+    // Steam only exposes the final price in data attributes; derive the base
+    const base =
+      final != null && discount > 0 && discount < 100
+        ? Math.round((final / (1 - discount / 100)) * 100) / 100
+        : null;
+    items.push({
+      name: decodeEntities(title),
+      image: img || null,
+      discount, base, final,
+      url: "https://store.steampowered.com/app/" + appid,
+    });
+  }
+  return { total: (j && j.total_count) || items.length, items };
+}
+
+app.get("/api/deals", async (req, res) => {
+  const genre = Object.prototype.hasOwnProperty.call(GENRES, req.query.genre)
+    ? req.query.genre : "all";
+  const start = Math.min(Math.max(parseInt(req.query.start, 10) || 0, 0), 2000);
+  const cur = (req.query.cur || "USD").toUpperCase();
+  const c = CURRENCIES[cur] || CURRENCIES.USD;
+
+  const key = "deals:" + genre + ":" + start + ":" + cur;
+  const hit = cacheGet(key);
+  if (hit) return res.json(hit);
+
+  try {
+    const { total, items } = await steamAllDeals(c.steamCC, GENRES[genre], start);
+    const payload = {
+      genre, start, total, items,
+      currency: cur, symbol: c.symbol, pos: c.pos,
+      saleName: saleName(),
+    };
+    cacheSet(key, payload, 20 * 60 * 1000); // auto-refreshes every 20 min
+    res.json(payload);
+  } catch (e) {
+    res.json({
+      genre, start, total: 0, items: [],
+      currency: cur, symbol: c.symbol, pos: c.pos, saleName: saleName(),
+      error: "Couldn't fetch deals right now — try again in a bit.",
+    });
+  }
+});
+
+// ------------------------------------------------------------
+//  Top deals per platform (GOG tab)
+// ------------------------------------------------------------
 async function steamDiscounts(cc) {
   const url =
     "https://store.steampowered.com/api/featuredcategories?cc=" + cc + "&l=en";
   const r = await fetch(url);
   const j = await r.json();
-  const items = (j.specials && j.specials.items) || [];
+
+  // Merge every category that carries discounted items to get a
+  // much bigger list than "specials" alone.
+  const buckets = [];
+  for (const k of Object.keys(j)) {
+    const cat = j[k];
+    if (cat && Array.isArray(cat.items)) buckets.push(cat.items);
+  }
   const seen = new Set();
   const out = [];
-  for (const it of items) {
-    if (seen.has(it.id)) continue;
-    seen.add(it.id);
-    out.push({
-      name: it.name,
-      image: it.large_capsule_image || it.header_image || null,
-      discount: it.discount_percent || 0,
-      base: it.original_price != null ? it.original_price / 100 : null,
-      final: it.final_price != null ? it.final_price / 100 : null,
-      url: "https://store.steampowered.com/app/" + it.id,
-    });
+  for (const items of buckets) {
+    for (const it of items) {
+      if (!it || it.id == null || seen.has(it.id)) continue;
+      if (!it.discounted || !it.discount_percent) continue;
+      seen.add(it.id);
+      out.push({
+        name: it.name,
+        image: it.large_capsule_image || it.header_image || it.small_capsule_image || null,
+        discount: it.discount_percent || 0,
+        base: it.original_price != null ? it.original_price / 100 : null,
+        final: it.final_price != null ? it.final_price / 100 : null,
+        url: "https://store.steampowered.com/app/" + it.id,
+      });
+    }
   }
-  return out.sort((a, b) => b.discount - a.discount);
+  return out.sort((a, b) => b.discount - a.discount).slice(0, 48);
 }
 
 async function gogDiscounts(rate) {
   const url =
     "https://catalog.gog.com/v1/catalog?order=desc:discount&productType=in:game" +
-    "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=24";
+    "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=48";
   const j = await fetchGog(url);
   return (j.products || []).map((p) => {
     const pm = p.price || {};
@@ -294,19 +466,125 @@ app.get("/api/discounts", async (req, res) => {
 
     const payload = {
       platform, currency: cur, symbol: c.symbol, pos: c.pos,
-      converted: platform === "gog" && cur !== "USD", items,
+      converted: platform === "gog" && cur !== "USD",
+      saleName: saleName(), items,
     };
-    cacheSet(key, payload, 20 * 60 * 1000); // 20 دقيقة
+    cacheSet(key, payload, 20 * 60 * 1000); // 20 minutes
     res.json(payload);
   } catch (e) {
     res.json({
       platform, currency: cur, symbol: c.symbol, items: [],
-      error: "تعذّر جلب الخصومات من هذي المنصة حاليًا (جرّبي بعد شوي).",
+      error: "Couldn't fetch deals from this store right now — try again in a bit.",
     });
   }
 });
 
+// ------------------------------------------------------------
+//  Steam multi-region price comparison
+//  Fetches the game's price across popular cheap regions,
+//  converts to USD and returns the top 5 cheapest + Saudi Arabia.
+// ------------------------------------------------------------
+const REGIONS = [
+  { cc: "ua", name: "Ukraine", flag: "🇺🇦" },
+  { cc: "tr", name: "Turkey", flag: "🇹🇷" },
+  { cc: "ar", name: "Argentina", flag: "🇦🇷" },
+  { cc: "kz", name: "Kazakhstan", flag: "🇰🇿" },
+  { cc: "ru", name: "Russia", flag: "🇷🇺" },
+  { cc: "in", name: "India", flag: "🇮🇳" },
+  { cc: "br", name: "Brazil", flag: "🇧🇷" },
+  { cc: "cn", name: "China", flag: "🇨🇳" },
+  { cc: "ph", name: "Philippines", flag: "🇵🇭" },
+  { cc: "pl", name: "Poland", flag: "🇵🇱" },
+  { cc: "us", name: "United States", flag: "🇺🇸" },
+];
+const SAUDI = { cc: "sa", name: "Saudi Arabia", flag: "🇸🇦" };
+
+async function regionPrice(appid, region, rates) {
+  try {
+    const url =
+      "https://store.steampowered.com/api/appdetails?appids=" + appid +
+      "&cc=" + region.cc + "&filters=price_overview&l=en";
+    const r = await fetch(url);
+    const j = await r.json();
+    const d = j && j[appid];
+    if (!d || !d.success || !d.data || !d.data.price_overview) return null;
+    const p = d.data.price_overview;
+    const amount = p.final / 100;
+    const rate = rates[p.currency];
+    if (!rate) return null;
+    return {
+      ...region,
+      currency: p.currency,
+      local: amount,
+      usd: amount / rate,
+      discount: p.discount_percent || 0,
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+app.get("/api/regions", async (req, res) => {
+  const q = cleanQuery(req.query.q);
+  if (!q) return res.json({ error: "Type a game name first." });
+
+  const key = "regions:" + q.toLowerCase();
+  const hit = cacheGet(key);
+  if (hit) return res.json(hit);
+
+  try {
+    const rates = await getRates();
+
+    // Find the game on Steam (US catalog) and take the best match
+    const matches = await searchSteam(q, "us");
+    const game = matches[0];
+    if (!game) return res.json({ error: "Couldn't find that game on Steam." });
+
+    const [saudi, ...others] = await Promise.all([
+      regionPrice(game.id, SAUDI, rates),
+      ...REGIONS.map((rg) => regionPrice(game.id, rg, rates)),
+    ]);
+
+    const priced = others.filter(Boolean).sort((a, b) => a.usd - b.usd);
+    if (!priced.length && !saudi) {
+      return res.json({ error: "No regional prices available for this game (it may be free or unreleased)." });
+    }
+
+    const top5 = priced.slice(0, 5);
+    const baseline = saudi ? saudi.usd : priced.length ? priced[priced.length - 1].usd : null;
+    const withSavings = (r) => ({
+      ...r,
+      usd: Math.round(r.usd * 100) / 100,
+      vsSaudi: baseline ? Math.round((1 - r.usd / baseline) * 100) : null,
+    });
+
+    const payload = {
+      game: { name: game.name, image: game.image, url: game.url },
+      saudi: saudi ? withSavings(saudi) : null,
+      regions: top5.map(withSavings),
+    };
+    cacheSet(key, payload, 60 * 60 * 1000); // 1 hour
+    res.json(payload);
+  } catch (e) {
+    res.status(500).json({ error: "Something went wrong while comparing regions. Please try again." });
+  }
+});
+
+// ------------------------------------------------------------
+//  Keep-alive: on Render free tier the app sleeps after 15 min
+//  without traffic. If we know our public URL, ping /health
+//  every 10 minutes so it stays awake. Render sets
+//  RENDER_EXTERNAL_URL automatically.
+// ------------------------------------------------------------
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.SELF_URL;
+if (SELF_URL) {
+  setInterval(() => {
+    fetch(SELF_URL.replace(/\/$/, "") + "/health").catch(() => {});
+  }, 10 * 60 * 1000);
+  console.log("  ⏰ Keep-alive enabled → pinging " + SELF_URL + "/health every 10 min");
+}
+
 app.listen(PORT, () => {
-  console.log("\n  ✅ الموقع شغّال على:  http://localhost:" + PORT);
-  console.log("  (Ctrl+C للإيقاف)\n");
+  console.log("\n  ✅ GamePrice is running at:  http://localhost:" + PORT);
+  console.log("  (Ctrl+C to stop)\n");
 });
