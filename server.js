@@ -422,11 +422,28 @@ async function steamDiscounts(cc) {
   return out.sort((a, b) => b.discount - a.discount).slice(0, 48);
 }
 
-async function gogDiscounts(rate, page) {
+// GOG's own genre slugs (verified against catalog.gog.com)
+const GOG_GENRES = {
+  all: null,
+  action: "action",
+  adventure: "adventure",
+  rpg: "rpg",
+  strategy: "strategy",
+  simulation: "simulation",
+  shooter: "shooter",
+  horror: "horror",
+  racing: "racing",
+  sports: "sports",
+  puzzle: "puzzle",
+  platformer: "platformer",
+};
+
+async function gogDiscounts(rate, page, genreSlug) {
   const url =
     "https://catalog.gog.com/v1/catalog?order=desc:discount&productType=in:game" +
     "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=48" +
-    "&page=" + page;
+    "&page=" + page +
+    (genreSlug ? "&genres=in:" + genreSlug : "");
   const j = await fetchGog(url);
   const total = j.productCount || 0;
   const items = (j.products || []).map((p) => {
@@ -456,8 +473,10 @@ app.get("/api/discounts", async (req, res) => {
   const cur = (req.query.cur || "USD").toUpperCase();
   const c = CURRENCIES[cur] || CURRENCIES.USD;
   const page = Math.min(Math.max(parseInt(req.query.page, 10) || 1, 1), 200);
+  const genre = Object.prototype.hasOwnProperty.call(GOG_GENRES, req.query.genre)
+    ? req.query.genre : "all";
 
-  const key = "disc:" + platform + ":" + cur + ":" + page;
+  const key = "disc:" + platform + ":" + cur + ":" + page + ":" + genre;
   const hit = cacheGet(key);
   if (hit) return res.json(hit);
 
@@ -469,13 +488,13 @@ app.get("/api/discounts", async (req, res) => {
       items = await steamDiscounts(c.steamCC);
       total = items.length;
     } else {
-      ({ total, items } = await gogDiscounts(rate, page));
+      ({ total, items } = await gogDiscounts(rate, page, GOG_GENRES[genre]));
     }
 
     const payload = {
       platform, currency: cur, symbol: c.symbol, pos: c.pos,
       converted: platform === "gog" && cur !== "USD",
-      saleName: saleName(), items, total, page,
+      saleName: saleName(), items, total, page, genre,
     };
     cacheSet(key, payload, 20 * 60 * 1000); // 20 minutes
     res.json(payload);

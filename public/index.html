@@ -468,12 +468,23 @@
 
   /* ===== Corner mascot ===== */
   .mascot {
-    position: fixed; bottom: 14px; right: 14px; z-index: 5;
-    width: 130px; height: 130px; pointer-events: none;
-    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.3));
+    position: fixed; top: 12px; left: 14px; z-index: 5;
+    width: 150px; pointer-events: none; text-align: center;
     animation: mascot-in 1s var(--ease) 0.6s backwards, float 5s ease-in-out 1.6s infinite;
   }
-  @keyframes mascot-in { from { opacity: 0; transform: translateY(40px) scale(0.6); } to { opacity: 1; transform: none; } }
+  .mascot img {
+    width: 100%; height: auto; display: block;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.3));
+  }
+  /* HTML text (not baked pixels) so it follows the theme:
+     white in dark mode, near-black in light mode */
+  .mascot .mtext {
+    font-weight: 800; color: var(--text); font-size: 0.72rem;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    transition: color 0.4s;
+  }
+  .mascot .mtext.sig { font-size: 0.85rem; letter-spacing: 2px; }
+  @keyframes mascot-in { from { opacity: 0; transform: translateY(-30px) scale(0.6); } to { opacity: 1; transform: none; } }
 
   /* ===== Footer ===== */
   footer {
@@ -491,6 +502,12 @@
   footer a.x:hover { color: var(--accent-2); text-decoration: underline; }
 
   /* ===== Responsive ===== */
+  @media (max-width: 1150px) {
+    .mascot { width: 92px; }
+    .mascot .mtext { font-size: 0.55rem; letter-spacing: 1px; }
+    .mascot .mtext.sig { font-size: 0.65rem; }
+    header { padding: 0 84px; }
+  }
   @media (max-width: 860px) { .grid { grid-template-columns: repeat(2, 1fr); } .skeletons.grid3 { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) {
     body { padding: 18px 12px 50px; }
@@ -508,7 +525,9 @@
     .fav-row { flex-wrap: wrap; }
     .fav-row .factions { margin-left: 0; width: 100%; }
     .fav-row .fbtn { flex: 1; }
-    .mascot { width: 84px; height: 84px; bottom: 10px; right: 10px; }
+    .mascot { width: 78px; top: 8px; left: 8px; }
+    .mascot .mtext { font-size: 0.5rem; letter-spacing: 1px; }
+    .mascot .mtext.sig { font-size: 0.58rem; }
     .sale-banner .sun { font-size: 2.2rem; }
     .sale-banner .ball { font-size: 1.8rem; }
     /* big blurred layers are expensive on phone GPUs */
@@ -519,7 +538,11 @@
 </head>
 <body>
 <div class="aurora" aria-hidden="true"><div class="orb"></div></div>
-<img class="mascot" src="/assets/phainon.gif" alt="" aria-hidden="true" width="130" height="130" loading="lazy" decoding="async" />
+<div class="mascot" aria-hidden="true">
+  <div class="mtext">I ship…</div>
+  <img src="/assets/phainon.gif" alt="" width="279" height="145" loading="lazy" decoding="async" />
+  <div class="mtext sig">Phairene</div>
+</div>
 
 <div class="wrap">
   <header class="enter">
@@ -756,9 +779,14 @@
   }
 
   // GOG tab — full discount catalog, paginated
-  let gogSt = { page: 1, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale", converted: false };
+  let gogSt = { genre: "all", page: 1, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale", converted: false };
   function renderGogDeals() {
-    if (!gogSt.items.length) { statusEl.textContent = "No deals to show right now."; contentEl.innerHTML = ""; return; }
+    if (!gogSt.items.length) {
+      statusEl.textContent = "No deals in this genre right now.";
+      contentEl.innerHTML = '<div class="view">' + genrePillsHTML(GOG_GENRE_LABELS, gogSt.genre) + "</div>";
+      observeReveals();
+      return;
+    }
     statusEl.innerHTML = gogSt.converted
       ? '<p class="note">Prices converted from USD at the current exchange rate.</p>' : "";
     const shown = gogSt.items.length;
@@ -768,6 +796,7 @@
       : "";
     contentEl.innerHTML = '<div class="view">' +
       saleBannerHTML(gogSt.saleName, gogSt.total.toLocaleString("en-US") + " discounted games on GOG · updates automatically") +
+      genrePillsHTML(GOG_GENRE_LABELS, gogSt.genre) +
       '<div class="grid">' + gogSt.items.map((it) => dealCardHTML(it, gogSt.sym, gogSt.pos)).join("") +
       "</div>" + more + "</div>";
     observeReveals();
@@ -779,11 +808,16 @@
     strategy: "Strategy", simulation: "Simulation", shooter: "Shooter",
     horror: "Horror", racing: "Racing", sports: "Sports", indie: "Indie", casual: "Casual",
   };
-  function genrePillsHTML() {
+  const GOG_GENRE_LABELS = {
+    all: "All", action: "Action", adventure: "Adventure", rpg: "RPG",
+    strategy: "Strategy", simulation: "Simulation", shooter: "Shooter",
+    horror: "Horror", racing: "Racing", sports: "Sports", puzzle: "Puzzle", platformer: "Platformer",
+  };
+  function genrePillsHTML(labels, active) {
     return '<div class="genres" role="tablist" aria-label="Game genres">' +
-      Object.keys(GENRE_LABELS).map((g) =>
-        '<button class="genre' + (deals.genre === g ? " active" : "") + '" data-genre="' + g + '" role="tab" aria-selected="' + (deals.genre === g) + '">' +
-        GENRE_LABELS[g] + "</button>").join("") + "</div>";
+      Object.keys(labels).map((g) =>
+        '<button class="genre' + (active === g ? " active" : "") + '" data-genre="' + g + '" role="tab" aria-selected="' + (active === g) + '">' +
+        labels[g] + "</button>").join("") + "</div>";
   }
   function renderSteamDeals() {
     const shown = deals.items.length;
@@ -795,7 +829,7 @@
       ? '<div class="load-more-wrap"><button class="load-more">Load more (' +
         (deals.total - shown).toLocaleString("en-US") + " left)</button></div>"
       : "";
-    contentEl.innerHTML = '<div class="view">' + banner + genrePillsHTML() +
+    contentEl.innerHTML = '<div class="view">' + banner + genrePillsHTML(GENRE_LABELS, deals.genre) +
       '<div class="grid" id="dealGrid">' +
       deals.items.map((it) => dealCardHTML(it, deals.sym, deals.pos)).join("") +
       "</div>" + more + "</div>";
@@ -897,7 +931,7 @@
     if (reset) { gogSt.page = 1; gogSt.items = []; }
     if (!silent) setBusy("Loading GOG deals…", "grid");
     try {
-      const r = await fetch("/api/discounts?platform=gog&page=" + gogSt.page + "&cur=" + curSel.value);
+      const r = await fetch("/api/discounts?platform=gog&genre=" + gogSt.genre + "&page=" + gogSt.page + "&cur=" + curSel.value);
       const data = await r.json();
       if (mode !== "gog") return;
       clearAll();
@@ -973,7 +1007,11 @@
       return;
     }
     const genre = e.target.closest(".genre");
-    if (genre) { deals.genre = genre.dataset.genre; loadSteamDeals(true); return; }
+    if (genre) {
+      if (mode === "gog") { gogSt.genre = genre.dataset.genre; loadGogDeals(true); }
+      else { deals.genre = genre.dataset.genre; loadSteamDeals(true); }
+      return;
+    }
     const more = e.target.closest(".load-more");
     if (more) {
       more.disabled = true; more.textContent = "Loading…";
