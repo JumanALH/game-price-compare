@@ -466,6 +466,15 @@
   .view { animation: viewin 0.45s var(--ease); }
   @keyframes viewin { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
+  /* ===== Corner mascot ===== */
+  .mascot {
+    position: fixed; bottom: 14px; right: 14px; z-index: 5;
+    width: 130px; height: 130px; pointer-events: none;
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.3));
+    animation: mascot-in 1s var(--ease) 0.6s backwards, float 5s ease-in-out 1.6s infinite;
+  }
+  @keyframes mascot-in { from { opacity: 0; transform: translateY(40px) scale(0.6); } to { opacity: 1; transform: none; } }
+
   /* ===== Footer ===== */
   footer {
     text-align: center; color: var(--muted); font-size: 0.8rem;
@@ -499,6 +508,7 @@
     .fav-row { flex-wrap: wrap; }
     .fav-row .factions { margin-left: 0; width: 100%; }
     .fav-row .fbtn { flex: 1; }
+    .mascot { width: 84px; height: 84px; bottom: 10px; right: 10px; }
     .sale-banner .sun { font-size: 2.2rem; }
     .sale-banner .ball { font-size: 1.8rem; }
     /* big blurred layers are expensive on phone GPUs */
@@ -509,6 +519,7 @@
 </head>
 <body>
 <div class="aurora" aria-hidden="true"><div class="orb"></div></div>
+<img class="mascot" src="/assets/phainon.gif" alt="" aria-hidden="true" width="130" height="130" loading="lazy" decoding="async" />
 
 <div class="wrap">
   <header class="enter">
@@ -744,17 +755,21 @@
       "<h2>" + esc(name) + "</h2><p>" + subtitle + "</p></div>";
   }
 
-  // GOG tab (top 48 deals)
-  function renderGogDeals(data) {
-    if (data.error) { statusEl.textContent = data.error; contentEl.innerHTML = ""; return; }
-    const items = data.items || [];
-    if (!items.length) { statusEl.textContent = "No deals to show right now."; contentEl.innerHTML = ""; return; }
-    statusEl.innerHTML = data.converted
+  // GOG tab — full discount catalog, paginated
+  let gogSt = { page: 1, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale", converted: false };
+  function renderGogDeals() {
+    if (!gogSt.items.length) { statusEl.textContent = "No deals to show right now."; contentEl.innerHTML = ""; return; }
+    statusEl.innerHTML = gogSt.converted
       ? '<p class="note">Prices converted from USD at the current exchange rate.</p>' : "";
-    const sym = data.symbol, pos = data.pos;
+    const shown = gogSt.items.length;
+    const more = shown < gogSt.total
+      ? '<div class="load-more-wrap"><button class="load-more">Load more (' +
+        (gogSt.total - shown).toLocaleString("en-US") + " left)</button></div>"
+      : "";
     contentEl.innerHTML = '<div class="view">' +
-      saleBannerHTML(data.saleName || "Sale", items.length + " hot deals live on GOG right now") +
-      '<div class="grid">' + items.map((it) => dealCardHTML(it, sym, pos)).join("") + "</div></div>";
+      saleBannerHTML(gogSt.saleName, gogSt.total.toLocaleString("en-US") + " discounted games on GOG · updates automatically") +
+      '<div class="grid">' + gogSt.items.map((it) => dealCardHTML(it, gogSt.sym, gogSt.pos)).join("") +
+      "</div>" + more + "</div>";
     observeReveals();
   }
 
@@ -817,15 +832,13 @@
 
   // ---------- regions view ----------
   function regionRowHTML(r, rankLabel, extraClass) {
-    const save = r.vsSaudi != null && r.vsSaudi > 0
-      ? '<span class="save">' + r.vsSaudi + "% cheaper than SA</span>" : "";
     return '<div class="region-row reveal ' + extraClass + '">' +
       '<span class="rank">' + rankLabel + "</span>" +
       '<span class="flag" aria-hidden="true">' + r.flag + "</span>" +
       "<div><div class='rn'>" + esc(r.name) + "</div>" +
       '<div class="local">' + r.local.toFixed(2) + " " + esc(r.currency) +
       (r.discount ? " · -" + r.discount + "% off" : "") + "</div></div>" +
-      '<div class="right"><div class="usd">≈ $' + r.usd.toFixed(2) + "</div>" + save + "</div>" +
+      '<div class="right"><div class="usd">≈ $' + r.usd.toFixed(2) + "</div></div>" +
       "</div>";
   }
   function renderRegions(data) {
@@ -844,7 +857,7 @@
     const saudi = data.saudi ? regionRowHTML(data.saudi, "🏠", "saudi") : "";
     contentEl.innerHTML = '<div class="view">' + hero +
       '<div class="region-list">' + rows + saudi + "</div>" +
-      '<p class="note region-note">Top 5 cheapest Steam regions (converted to USD) vs your home region 🇸🇦 · ' +
+      '<p class="note region-note">Top 5 cheapest Steam regions, converted to USD · ' +
       "prices are estimates and buying cross-region may require a matching payment method.</p>" +
       "</div>";
     observeReveals();
@@ -880,14 +893,20 @@
       renderSteamDeals();
     } catch (e) { if (!silent) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; } }
   }
-  async function loadGogDeals(silent) {
-    if (!silent) setBusy("Loading the hottest GOG deals…", "grid");
+  async function loadGogDeals(reset, silent) {
+    if (reset) { gogSt.page = 1; gogSt.items = []; }
+    if (!silent) setBusy("Loading GOG deals…", "grid");
     try {
-      const r = await fetch("/api/discounts?platform=gog&cur=" + curSel.value);
+      const r = await fetch("/api/discounts?platform=gog&page=" + gogSt.page + "&cur=" + curSel.value);
       const data = await r.json();
       if (mode !== "gog") return;
       clearAll();
-      renderGogDeals(data);
+      if (data.error && !(data.items || []).length && !gogSt.items.length) { statusEl.textContent = data.error; return; }
+      gogSt.total = data.total || 0;
+      gogSt.items = gogSt.items.concat(data.items || []);
+      gogSt.sym = data.symbol; gogSt.pos = data.pos;
+      gogSt.saleName = data.saleName; gogSt.converted = data.converted;
+      renderGogDeals();
     } catch (e) { if (!silent) { clearAll(); statusEl.textContent = "Couldn't reach the server. Make sure it's running."; } }
   }
   async function loadRegions(q) {
@@ -922,7 +941,7 @@
     } else if (m === "steam") {
       loadSteamDeals(true);
     } else {
-      loadGogDeals();
+      loadGogDeals(true);
     }
   }
 
@@ -937,7 +956,7 @@
     if (mode === "search") { const q = searchInput.value.trim(); if (q) doSearch(q); }
     else if (mode === "regions") { const q = searchInput.value.trim(); if (q) loadRegions(q); }
     else if (mode === "steam") loadSteamDeals(true);
-    else if (mode === "gog") loadGogDeals();
+    else if (mode === "gog") loadGogDeals(true);
   });
 
   // Delegated clicks: favorite hearts, genre pills, load-more, favorites actions
@@ -958,8 +977,8 @@
     const more = e.target.closest(".load-more");
     if (more) {
       more.disabled = true; more.textContent = "Loading…";
-      deals.start += 48;
-      loadSteamDeals(false, true);
+      if (mode === "gog") { gogSt.page += 1; loadGogDeals(false, true); }
+      else { deals.start += 48; loadSteamDeals(false, true); }
       return;
     }
     const cmp = e.target.closest("[data-cmp]");
@@ -971,7 +990,7 @@
   // Deals refresh themselves — no manual edits ever needed
   setInterval(() => {
     if (mode === "steam") loadSteamDeals(true, true);
-    else if (mode === "gog") loadGogDeals(true);
+    else if (mode === "gog") loadGogDeals(true, true);
   }, 20 * 60 * 1000);
 
   statusEl.textContent = "Type a game name to compare Steam vs GOG 👆";

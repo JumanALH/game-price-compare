@@ -422,12 +422,14 @@ async function steamDiscounts(cc) {
   return out.sort((a, b) => b.discount - a.discount).slice(0, 48);
 }
 
-async function gogDiscounts(rate) {
+async function gogDiscounts(rate, page) {
   const url =
     "https://catalog.gog.com/v1/catalog?order=desc:discount&productType=in:game" +
-    "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=48";
+    "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=48" +
+    "&page=" + page;
   const j = await fetchGog(url);
-  return (j.products || []).map((p) => {
+  const total = j.productCount || 0;
+  const items = (j.products || []).map((p) => {
     const pm = p.price || {};
     let baseUSD = null, finalUSD = null;
     if (pm.finalMoney) {
@@ -446,34 +448,40 @@ async function gogDiscounts(rate) {
       url: "https://www.gog.com/en/game/" + (p.slug || ""),
     };
   });
+  return { total, items };
 }
 
 app.get("/api/discounts", async (req, res) => {
   const platform = req.query.platform === "gog" ? "gog" : "steam";
   const cur = (req.query.cur || "USD").toUpperCase();
   const c = CURRENCIES[cur] || CURRENCIES.USD;
+  const page = Math.min(Math.max(parseInt(req.query.page, 10) || 1, 1), 200);
 
-  const key = "disc:" + platform + ":" + cur;
+  const key = "disc:" + platform + ":" + cur + ":" + page;
   const hit = cacheGet(key);
   if (hit) return res.json(hit);
 
   try {
     const rates = await getRates();
     const rate = rates[cur] || 1;
-    let items = [];
-    if (platform === "steam") items = await steamDiscounts(c.steamCC);
-    else items = await gogDiscounts(rate);
+    let items = [], total = 0;
+    if (platform === "steam") {
+      items = await steamDiscounts(c.steamCC);
+      total = items.length;
+    } else {
+      ({ total, items } = await gogDiscounts(rate, page));
+    }
 
     const payload = {
       platform, currency: cur, symbol: c.symbol, pos: c.pos,
       converted: platform === "gog" && cur !== "USD",
-      saleName: saleName(), items,
+      saleName: saleName(), items, total, page,
     };
     cacheSet(key, payload, 20 * 60 * 1000); // 20 minutes
     res.json(payload);
   } catch (e) {
     res.json({
-      platform, currency: cur, symbol: c.symbol, items: [],
+      platform, currency: cur, symbol: c.symbol, items: [], total: 0, page,
       error: "Couldn't fetch deals from this store right now — try again in a bit.",
     });
   }
@@ -551,17 +559,12 @@ app.get("/api/regions", async (req, res) => {
     }
 
     const top5 = priced.slice(0, 5);
-    const baseline = saudi ? saudi.usd : priced.length ? priced[priced.length - 1].usd : null;
-    const withSavings = (r) => ({
-      ...r,
-      usd: Math.round(r.usd * 100) / 100,
-      vsSaudi: baseline ? Math.round((1 - r.usd / baseline) * 100) : null,
-    });
+    const rounded = (r) => ({ ...r, usd: Math.round(r.usd * 100) / 100 });
 
     const payload = {
       game: { name: game.name, image: game.image, url: game.url },
-      saudi: saudi ? withSavings(saudi) : null,
-      regions: top5.map(withSavings),
+      saudi: saudi ? rounded(saudi) : null,
+      regions: top5.map(rounded),
     };
     cacheSet(key, payload, 60 * 60 * 1000); // 1 hour
     res.json(payload);
