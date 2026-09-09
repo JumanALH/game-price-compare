@@ -523,6 +523,135 @@ app.get("/api/discounts", async (req, res) => {
 });
 
 // ------------------------------------------------------------
+//  Free for a limited time (both stores)
+//
+//  "Free" here means a normally-paid game currently discounted to
+//  zero — a claim-and-keep promo. Permanently free-to-play titles
+//  and demos are deliberately excluded.
+// ------------------------------------------------------------
+
+// Sorting specials by price ascending puts anything at 0 first, so a
+// single page is enough to catch every 100%-off promo.
+async function steamFreePromos(cc) {
+  const url =
+    "https://store.steampowered.com/search/results/?query&start=0&count=50" +
+    "&specials=1&sort_by=Price_ASC&infinite=1&json=1&ndl=1&cc=" + cc + "&l=en";
+  const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0" } });
+  const j = await r.json();
+  const html = (j && j.results_html) || "";
+  const items = [];
+  for (const chunk of html.split('<a href="').slice(1)) {
+    const appid = (chunk.match(/data-ds-appid="(\d+)"/) || [])[1];
+    const title = (chunk.match(/<span class="title">([^<]+)<\/span>/) || [])[1];
+    const finalC = (chunk.match(/data-price-final="(\d+)"/) || [])[1];
+    const disc = (chunk.match(/data-discount="(\d+)"/) || [])[1];
+    const img = (chunk.match(/<img src="([^"]+)"/) || [])[1];
+    if (!appid || !title) continue;
+    if (parseInt(disc, 10) !== 100 || parseInt(finalC, 10) !== 0) continue;
+    items.push({
+      store: "steam",
+      name: decodeEntities(title),
+      image: img || null,
+      discount: 100,
+      base: null, // Steam only exposes the final price; base is unknowable at 100% off
+      final: 0,
+      url: "https://store.steampowered.com/app/" + appid,
+    });
+  }
+  return items;
+}
+
+// Ordered by discount descending, so 100%-off promos are on page one.
+async function gogFreePromos(rate) {
+  const url =
+    "https://catalog.gog.com/v1/catalog?order=desc:discount&productType=in:game" +
+    "&price=discounted:eq:true&countryCode=US&currencyCode=USD&locale=en-US&limit=48";
+  const j = await fetchGog(url);
+  const items = [];
+  for (const p of j.products || []) {
+    const pm = p.price || {};
+    if (!pm.finalMoney || !pm.baseMoney) continue;
+    const baseUSD = parseFloat(pm.baseMoney.amount);
+    const finalUSD = parseFloat(pm.finalMoney.amount);
+    if (!(baseUSD > 0 && finalUSD === 0)) continue; // paid game, now zero
+    items.push({
+      store: "gog",
+      name: p.title,
+      image: p.coverHorizontal || null,
+      discount: 100,
+      base: baseUSD * rate,
+      final: 0,
+      url: "https://www.gog.com/en/game/" + (p.slug || ""),
+    });
+  }
+  return items;
+}
+
+// GOG's giveaway slot. 404 simply means nothing is running.
+// The active-response shape isn't documented, so anything we can't
+// confidently read is skipped rather than rendered half-populated.
+async function gogGiveaway() {
+  try {
+    const r = await fetch("https://www.gog.com/giveaway/api/status", {
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    const g = j.giveaway || j;
+    const name = g.title || g.name || (g.product && g.product.title);
+    if (!name) return null;
+    const slug = g.slug || (g.product && g.product.slug);
+    return {
+      store: "gog",
+      name: String(name),
+      image: g.image || g.coverHorizontal || null,
+      discount: 100,
+      base: null,
+      final: 0,
+      giveaway: true,
+      url: slug ? "https://www.gog.com/en/game/" + slug : "https://www.gog.com/giveaway",
+    };
+  } catch (e) {
+    return null;
+  }
+}
+
+app.get("/api/free", async (req, res) => {
+  const cur = (req.query.cur || "USD").toUpperCase();
+  const c = CURRENCIES[cur] || CURRENCIES.USD;
+
+  const key = "free:" + cur;
+  const hit = cacheGet(key);
+  if (hit) return res.json(hit);
+
+  const rates = await getRates();
+  const rate = rates[cur] || 1;
+
+  // One store failing shouldn't blank out the other
+  const [steamRes, gogRes, giftRes] = await Promise.allSettled([
+    steamFreePromos(c.steamCC),
+    gogFreePromos(rate),
+    gogGiveaway(),
+  ]);
+
+  const steam = steamRes.status === "fulfilled" ? steamRes.value : [];
+  let gog = gogRes.status === "fulfilled" ? gogRes.value : [];
+  const gift = giftRes.status === "fulfilled" ? giftRes.value : null;
+  if (gift && !gog.some((g) => g.name === gift.name)) gog = [gift, ...gog];
+
+  const payload = {
+    steam, gog,
+    total: steam.length + gog.length,
+    currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, pos: c.pos,
+    converted: cur !== "USD",
+    steamError: steamRes.status === "rejected",
+    gogError: gogRes.status === "rejected",
+  };
+  cacheSet(key, payload, 10 * 60 * 1000); // shorter TTL — these expire fast
+  res.json(payload);
+});
+
+// ------------------------------------------------------------
 //  Steam multi-region price comparison
 //  Fetches the game's price across popular cheap regions,
 //  converts to USD and returns the top 5 cheapest + Saudi Arabia.

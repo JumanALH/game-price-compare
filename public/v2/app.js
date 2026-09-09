@@ -286,6 +286,67 @@ function renderGogDeals() {
   observeReveals();
 }
 
+/* ---------- free-for-a-limited-time view ---------- */
+function freeCardHTML(it, sym, pos) {
+  regItem(it.name, it.image, it.url, "Free");
+  const img = it.image
+    ? '<div class="imgbox"><img src="' + safeUrl(it.image) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()" /></div>'
+    : "";
+  // base is unknown for some promos — only strike it out when we have it
+  const was = it.base ? '<span class="pold num">' + money(it.base, sym, pos) + "</span>" : "";
+  const gift = it.giveaway ? '<span class="giveaway-tag">' + icon("gift", "ico-sm") + "Giveaway</span>" : "";
+  return '<article class="deal free reveal">' +
+    favBtnHTML(it.name, "float") +
+    '<span class="corner free-badge">' + icon("gift", "ico-sm") + "FREE</span>" + img +
+    '<div class="body">' +
+    '<h3 class="dname">' + esc(it.name) + "</h3>" + gift +
+    '<div class="row"><span class="pnow free-price">Free to keep</span>' + was + "</div>" +
+    '<a class="store-link" href="' + safeUrl(it.url) + '" target="_blank" rel="noopener noreferrer">' +
+    "Claim on " + (it.store === "steam" ? "Steam" : "GOG") + icon("out", "ico-sm") + "</a>" +
+    "</div></article>";
+}
+
+function freeGroupHTML(store, items, sym, pos) {
+  if (!items.length) return "";
+  const label = store === "steam" ? "Steam" : "GOG";
+  return '<section class="free-group">' +
+    '<h3 class="group-head ' + store + '">' + icon(store === "steam" ? "flame" : "tag", "ico-sm") +
+    label + '<span class="group-count num">' + items.length + "</span></h3>" +
+    '<div class="grid">' + items.map((it) => freeCardHTML(it, sym, pos)).join("") + "</div></section>";
+}
+
+function renderFree(data) {
+  const steam = data.steam || [];
+  const gog = data.gog || [];
+
+  let notes = "";
+  if (data.steamError) notes += noteHTML("Couldn't reach Steam just now — showing GOG only.", "warn");
+  if (data.gogError) notes += noteHTML("Couldn't reach GOG just now — showing Steam only.", "warn");
+  statusEl.innerHTML = notes;
+
+  if (!steam.length && !gog.length) {
+    paint('<div class="empty">' + icon("gift") +
+      "<h3>Nothing free right now</h3>" +
+      "<p>No giveaways running on Steam or GOG at the moment. This page re-checks on its own, " +
+      "so look back when the next sale lands — free-to-keep promos usually appear during one.</p></div>");
+    return;
+  }
+
+  const sym = data.symbol, pos = data.pos;
+  paint(
+    '<div class="sale-banner free-banner reveal">' +
+    "<h2>" + icon("gift") + "Free for a limited time</h2>" +
+    "<p>" + (steam.length + gog.length) + " game" + (steam.length + gog.length === 1 ? "" : "s") +
+    " you can claim and keep forever · across Steam and GOG</p></div>" +
+    freeGroupHTML("steam", steam, sym, pos) +
+    freeGroupHTML("gog", gog, sym, pos) +
+    '<div class="note-block">' +
+    noteHTML("Free-to-keep promos end without warning — claim them while they're live. Permanently free-to-play games and demos aren't listed here.") +
+    "</div>"
+  );
+  observeReveals();
+}
+
 /* ---------- favorites view ---------- */
 function renderFavs() {
   const list = loadFavs();
@@ -407,6 +468,18 @@ async function loadGogDeals(reset, silent) {
   } catch (e) { if (!silent) { clearAll(); statusEl.textContent = NET_ERROR; } }
 }
 
+async function loadFree(silent) {
+  if (!silent) setBusy("Checking Steam and GOG for giveaways…", "grid");
+  try {
+    const r = await fetch("/api/free?cur=" + curSel.value);
+    const data = await r.json();
+    if (mode !== "free") return;
+    clearAll();
+    curDec = data.decimals ?? 2;
+    renderFree(data);
+  } catch (e) { if (!silent) { clearAll(); statusEl.textContent = NET_ERROR; } }
+}
+
 async function loadRegions(q) {
   setBusy("Comparing prices across regions…", "list");
   try {
@@ -424,6 +497,10 @@ const HERO = {
     sub: "Live prices pulled the moment you search — see which store is cheaper and exactly how much you save.",
     hint: "Type a game name to compare Steam vs GOG.",
     placeholder: "Search any game… e.g. Elden Ring",
+  },
+  free: {
+    title: "Free for a limited time",
+    sub: "Games you can claim and keep forever, on Steam and GOG — checked automatically, so grab them before the promo ends.",
   },
   steam: {
     title: "Steam deals, straight from the store",
@@ -469,6 +546,8 @@ function switchMode(m) {
     if (m === "regions" && q) loadRegions(q);
   } else if (m === "favs") {
     renderFavs();
+  } else if (m === "free") {
+    loadFree();
   } else if (m === "steam") {
     loadSteamDeals(true);
   } else {
@@ -504,6 +583,7 @@ curSel.addEventListener("change", () => {
   const q = searchInput.value.trim();
   if (mode === "search" && q) doSearch(q);
   else if (mode === "regions" && q) loadRegions(q);
+  else if (mode === "free") loadFree();
   else if (mode === "steam") loadSteamDeals(true);
   else if (mode === "gog") loadGogDeals(true);
 });
@@ -550,6 +630,7 @@ contentEl.addEventListener("click", (e) => {
 setInterval(() => {
   if (mode === "steam") loadSteamDeals(true, true);
   else if (mode === "gog") loadGogDeals(true, true);
+  else if (mode === "free") loadFree(true);
 }, 20 * 60 * 1000);
 
 stagger([...chips.querySelectorAll(".chip")], 0.025);

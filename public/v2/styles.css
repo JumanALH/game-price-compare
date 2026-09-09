@@ -622,6 +622,56 @@ select#cur:hover { border-color: var(--border-strong); }
 .load-more:disabled { opacity: 0.5; cursor: default; }
 
 /* ============================================================
+   free for a limited time
+   ============================================================ */
+.tab-free.active {
+  background: linear-gradient(120deg, var(--win), #34c98a);
+  box-shadow: 0 4px 14px var(--win-soft);
+  color: #04281b;
+}
+.tabbar .tab-free.active { color: var(--win); background: none; }
+
+.free-banner {
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--win-soft) 0%, transparent 58%),
+    radial-gradient(120% 140% at 100% 100%, var(--primary-soft) 0%, transparent 58%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--win) 32%, transparent);
+}
+.free-banner h2 .ico { color: var(--win); }
+
+.free-group { margin-bottom: var(--sp-6); }
+.group-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-3);
+}
+.group-head.steam { color: var(--steam); }
+.group-head.gog { color: var(--gog); }
+.group-count {
+  font-size: 0.78rem; font-weight: 700;
+  padding: 2px 9px; border-radius: var(--r-full);
+  background: var(--surface-2); color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.deal.free { border-color: color-mix(in srgb, var(--win) 38%, transparent); }
+.free-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--win); color: #04281b;
+  letter-spacing: 0.5px;
+}
+.free-price { color: var(--win); }
+.giveaway-tag {
+  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+  padding: 3px 9px; border-radius: var(--r-full);
+  background: var(--gog-soft); color: var(--gog);
+  font-size: 0.72rem; font-weight: 700;
+}
+
+/* ============================================================
    regions
    ============================================================ */
 .region-hero {
@@ -842,6 +892,10 @@ footer .heart { color: var(--accent-2); display: inline-block; animation: beat 1
 @media (max-width: 420px) {
   .wordmark { font-size: 1.12rem; }
   .brand-badge { width: 44px; height: 44px; }
+  /* six destinations have to share the bar */
+  .tabbar .tab { font-size: 0.6rem; padding: 8px 1px; gap: 2px; min-width: 0; }
+  .tabbar .tab .ico { width: 18px; height: 18px; }
+  .tabbar .tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
   .bar-inner { padding: 0 var(--sp-3); gap: var(--sp-2); }
 }
 
