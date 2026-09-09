@@ -70,12 +70,26 @@ app.get("/health", (req, res) => res.json({ ok: true, ts: Date.now() }));
 //  Currencies (display) — Steam returns local prices per cc,
 //  GOG always returns USD so we convert with live FX rates.
 // ------------------------------------------------------------
+// `decimals` defaults to 2; zero-decimal currencies (JPY) set it explicitly.
 const CURRENCIES = {
   USD: { symbol: "$", steamCC: "us", pos: "before" },
   EUR: { symbol: "€", steamCC: "de", pos: "before" },
   GBP: { symbol: "£", steamCC: "gb", pos: "before" },
+  JPY: { symbol: "¥", steamCC: "jp", pos: "before", decimals: 0 },
+  CAD: { symbol: "CA$", steamCC: "ca", pos: "before" },
+  AUD: { symbol: "A$", steamCC: "au", pos: "before" },
+  CHF: { symbol: "CHF", steamCC: "ch", pos: "after" },
   SAR: { symbol: "SAR", steamCC: "sa", pos: "after" },
   AED: { symbol: "AED", steamCC: "ae", pos: "after" },
+  KWD: { symbol: "KWD", steamCC: "kw", pos: "after" },
+  QAR: { symbol: "QAR", steamCC: "qa", pos: "after" },
+  TRY: { symbol: "₺", steamCC: "tr", pos: "after" },
+  INR: { symbol: "₹", steamCC: "in", pos: "before" },
+  BRL: { symbol: "R$", steamCC: "br", pos: "before" },
+  MXN: { symbol: "MX$", steamCC: "mx", pos: "before" },
+  PLN: { symbol: "zł", steamCC: "pl", pos: "after" },
+  ZAR: { symbol: "R", steamCC: "za", pos: "before" },
+  SGD: { symbol: "S$", steamCC: "sg", pos: "before" },
 };
 
 // ------------------------------------------------------------
@@ -97,6 +111,8 @@ const FALLBACK_RATES = {
   USD: 1, EUR: 0.92, GBP: 0.79, SAR: 3.75, AED: 3.6725,
   UAH: 41, RUB: 80, KZT: 520, INR: 86, BRL: 5.5,
   CNY: 7.2, PHP: 58, PLN: 3.9, TRY: 40, ARS: 1200, JPY: 155,
+  CAD: 1.37, AUD: 1.53, CHF: 0.88, KWD: 0.307, QAR: 3.64,
+  MXN: 18.5, ZAR: 18.2, SGD: 1.31,
 };
 let fxCache = null;
 
@@ -277,7 +293,7 @@ app.get("/api/search", async (req, res) => {
     });
 
     const payload = {
-      results, currency: cur, symbol: c.symbol, pos: c.pos,
+      results, currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, pos: c.pos,
       converted: cur !== "USD", gogError,
     };
     cacheSet(key, payload, 10 * 60 * 1000); // 10 minutes
@@ -372,7 +388,7 @@ app.get("/api/deals", async (req, res) => {
     const { total, items } = await steamAllDeals(c.steamCC, GENRES[genre], start);
     const payload = {
       genre, start, total, items,
-      currency: cur, symbol: c.symbol, pos: c.pos,
+      currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, pos: c.pos,
       saleName: saleName(),
     };
     cacheSet(key, payload, 20 * 60 * 1000); // auto-refreshes every 20 min
@@ -380,7 +396,7 @@ app.get("/api/deals", async (req, res) => {
   } catch (e) {
     res.json({
       genre, start, total: 0, items: [],
-      currency: cur, symbol: c.symbol, pos: c.pos, saleName: saleName(),
+      currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, pos: c.pos, saleName: saleName(),
       error: "Couldn't fetch deals right now — try again in a bit.",
     });
   }
@@ -492,7 +508,7 @@ app.get("/api/discounts", async (req, res) => {
     }
 
     const payload = {
-      platform, currency: cur, symbol: c.symbol, pos: c.pos,
+      platform, currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, pos: c.pos,
       converted: platform === "gog" && cur !== "USD",
       saleName: saleName(), items, total, page, genre,
     };
@@ -500,7 +516,7 @@ app.get("/api/discounts", async (req, res) => {
     res.json(payload);
   } catch (e) {
     res.json({
-      platform, currency: cur, symbol: c.symbol, items: [], total: 0, page,
+      platform, currency: cur, symbol: c.symbol, decimals: c.decimals ?? 2, items: [], total: 0, page,
       error: "Couldn't fetch deals from this store right now — try again in a bit.",
     });
   }
