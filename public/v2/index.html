@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css?v=5" />
+<link rel="stylesheet" href="styles.css?v=6" />
 </head>
 <body>
 
@@ -81,8 +81,10 @@
 <header class="topbar">
   <div class="bar-inner">
     <a class="brand" href="/v2/" aria-label="GamePrice home">
-      <img class="brand-avatar" src="/assets/phairene.png" alt="" width="60" height="60"
-           decoding="async" onerror="this.remove()" />
+      <span class="brand-badge">
+        <img class="brand-avatar" src="/assets/phairene.png" alt="" width="56" height="56"
+             decoding="async" onerror="this.closest('.brand-badge').remove()" />
+      </span>
       <span class="wordmark">GamePrice</span>
     </a>
 
@@ -189,6 +191,6 @@
   <button class="tab" data-mode="favs"><svg class="ico" aria-hidden="true"><use href="#i-heart" /></svg><span>Favorites</span></button>
 </nav>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
