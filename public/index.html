@@ -12,7 +12,922 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="styles.css?v=8" />
+<style>
+/* ============================================================
+   GamePrice — design tokens
+   ============================================================ */
+:root {
+  /* surfaces */
+  --bg: #0a0c18;
+  --bg-2: #0f1223;
+  --surface: #161a30;
+  --surface-2: #1e2340;
+  --surface-3: #272d4f;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* text */
+  --text: #edeffa;
+  --muted: #9aa2c8;
+  --faint: #6f7699;
+
+  /* brand */
+  --primary: #7c5cff;
+  --primary-2: #a78bff;
+  --primary-soft: rgba(124, 92, 255, 0.16);
+  --accent: #ff9f5a;
+  --accent-2: #ff7a6b;
+  --accent-soft: rgba(255, 159, 90, 0.14);
+
+  /* semantic */
+  --steam: #66c0f4;
+  --steam-soft: rgba(102, 192, 244, 0.14);
+  --gog: #b06bff;
+  --gog-soft: rgba(176, 107, 255, 0.14);
+  --win: #3ddc97;
+  --win-soft: rgba(61, 220, 151, 0.14);
+  --danger: #ff6b6b;
+  --gold: #ffce6a;
+
+  /* shape */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+  --r-full: 999px;
+
+  /* spacing (density 6 — standard) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* elevation */
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --sh-2: 0 6px 20px rgba(0, 0, 0, 0.28);
+  --sh-3: 0 18px 46px rgba(0, 0, 0, 0.42);
+
+  /* motion */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --dur-slow: 420ms;
+
+  /* type */
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+  --font-ui: "Inter", system-ui, -apple-system, sans-serif;
+
+  --topbar-h: 74px;
+  --tabbar-h: 62px;
+}
+
+/* light = tinted lavender, not stark white — softer on the eyes, more colour */
+:root[data-theme="light"] {
+  --bg: #e7e4f7;
+  --bg-2: #dcd7f0;
+  --surface: #f6f4ff;
+  --surface-2: #ece8fb;
+  --surface-3: #ded8f5;
+  --border: rgba(70, 45, 140, 0.14);
+  --border-strong: rgba(70, 45, 140, 0.28);
+
+  --text: #1d1749;
+  --muted: #544d85;
+  --faint: #6b6396;
+
+  --primary: #6d3fe0;
+  --primary-2: #8b5cf6;
+  --primary-soft: rgba(109, 63, 224, 0.14);
+  --accent: #f2701a;
+  --accent-2: #e8456f;
+  --accent-soft: rgba(242, 112, 26, 0.16);
+
+  --steam: #0d6fbf;
+  --steam-soft: rgba(13, 111, 191, 0.13);
+  --gog: #8a2fd8;
+  --gog-soft: rgba(138, 47, 216, 0.13);
+  --win: #0b8f60;
+  --win-soft: rgba(11, 143, 96, 0.16);
+  --danger: #d5335c;
+  --gold: #b3790f;
+
+  --sh-1: 0 1px 3px rgba(50, 30, 110, 0.1);
+  --sh-2: 0 8px 22px rgba(50, 30, 110, 0.12);
+  --sh-3: 0 18px 44px rgba(50, 30, 110, 0.18);
+}
+
+/* ============================================================
+   base
+   ============================================================ */
+*,
+*::before,
+*::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.55;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  transition: background var(--dur-slow) var(--ease), color var(--dur-slow) var(--ease);
+}
+
+img { max-width: 100%; display: block; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: none; }
+a { color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--primary-2);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+.ico { width: 20px; height: 20px; flex: none; stroke-width: 2; }
+.ico-sm { width: 16px; height: 16px; }
+
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
+/* ============================================================
+   ambient background
+   ============================================================ */
+.bg-fx {
+  position: fixed; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+}
+.bg-fx span {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: 0.4;
+}
+.bg-fx .o1 {
+  width: 46vw; height: 46vw; min-width: 320px; min-height: 320px;
+  top: -14vw; left: -10vw;
+  background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+  animation: float1 28s ease-in-out infinite alternate;
+}
+.bg-fx .o2 {
+  width: 52vw; height: 52vw; min-width: 340px; min-height: 340px;
+  bottom: -22vw; right: -14vw;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0.28;
+  animation: float2 34s ease-in-out infinite alternate;
+}
+.bg-fx .o3 {
+  width: 38vw; height: 38vw; min-width: 260px; min-height: 260px;
+  top: 42%; left: 48%;
+  background: radial-gradient(circle, var(--steam) 0%, transparent 70%);
+  opacity: 0.16;
+  animation: float3 40s ease-in-out infinite alternate;
+}
+:root[data-theme="light"] .bg-fx span { opacity: 0.42; }
+:root[data-theme="light"] .bg-fx .o3 { opacity: 0.3; }
+
+@keyframes float1 { to { transform: translate(8vw, 6vw) scale(1.14); } }
+@keyframes float2 { to { transform: translate(-7vw, -5vw) scale(1.1); } }
+@keyframes float3 { to { transform: translate(-10vw, 5vw) scale(1.18); } }
+
+/* ============================================================
+   top bar
+   ============================================================ */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  height: var(--topbar-h);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-bottom: 1px solid var(--border);
+}
+.bar-inner {
+  max-width: 1180px; height: 100%; margin: 0 auto;
+  padding: 0 var(--sp-4);
+  display: flex; align-items: center; gap: var(--sp-4);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; flex: none; text-decoration: none; }
+/* framed avatar — sits fully inside the bar instead of spilling past it */
+.brand-badge {
+  width: 56px; height: 56px; flex: none;
+  display: grid; place-items: center; overflow: hidden;
+  border-radius: var(--r-full);
+  background: radial-gradient(circle at 50% 28%, var(--surface-3), var(--surface-2));
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--sh-1);
+}
+.brand-avatar {
+  width: 88%; height: 88%;
+  object-fit: contain;
+  animation: bob 4.5s ease-in-out infinite;
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50% { transform: translateY(-3px) rotate(1.5deg); }
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 700; font-size: 1.32rem; letter-spacing: -0.4px;
+  background: linear-gradient(96deg, var(--text) 8%, var(--primary-2) 42%, var(--accent) 72%, var(--text) 96%);
+  background-size: 220% auto;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: shine 7s linear infinite;
+  white-space: nowrap;
+}
+@keyframes shine { to { background-position: -220% center; } }
+
+/* desktop nav */
+.tabs {
+  display: flex; gap: 2px; margin: 0 auto;
+  background: var(--surface); padding: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-full);
+}
+.tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: var(--r-full);
+  font-size: 0.9rem; font-weight: 600; color: var(--muted);
+  white-space: nowrap;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.tab:hover { color: var(--text); background: var(--surface-2); }
+.tab.active {
+  color: #fff;
+  background: linear-gradient(120deg, var(--primary), var(--primary-2));
+  box-shadow: 0 4px 14px var(--primary-soft);
+}
+:root[data-theme="light"] .tab.active { color: #fff; }
+
+.bar-actions { display: flex; align-items: center; gap: var(--sp-2); flex: none; margin-left: auto; }
+
+.select-wrap { position: relative; display: flex; align-items: center; }
+.select-wrap .ico {
+  position: absolute; right: 10px; pointer-events: none;
+  width: 16px; height: 16px; color: var(--muted);
+}
+select#cur {
+  appearance: none; -webkit-appearance: none;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  padding: 9px 30px 9px 12px;
+  font-size: 0.86rem; font-weight: 600;
+  min-height: 42px;
+  transition: border-color var(--dur) var(--ease);
+}
+select#cur:hover { border-color: var(--border-strong); }
+
+.icon-btn {
+  width: 42px; height: 42px; display: grid; place-items: center;
+  font-size: 1.05rem; line-height: 1;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.icon-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.icon-btn:active { transform: scale(0.94); }
+
+/* ============================================================
+   layout
+   ============================================================ */
+.wrap {
+  max-width: 1180px; margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4) var(--sp-7);
+}
+
+.hero { text-align: center; margin-bottom: var(--sp-5); }
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+  font-weight: 700; line-height: 1.15; letter-spacing: -0.6px;
+}
+.hero p {
+  color: var(--muted); margin-top: 10px;
+  font-size: clamp(0.94rem, 1.6vw, 1.05rem);
+  max-width: 58ch; margin-inline: auto;
+}
+
+/* entrance */
+.enter { animation: enter var(--dur-slow) var(--ease) backwards; }
+.enter.d1 { animation-delay: 60ms; }
+.enter.d2 { animation-delay: 120ms; }
+.enter.d3 { animation-delay: 180ms; }
+@keyframes enter { from { opacity: 0; transform: translateY(14px); } }
+
+/* ============================================================
+   search
+   ============================================================ */
+.searchbar {
+  display: flex; gap: var(--sp-2); align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-xl);
+  padding: 7px 7px 7px var(--sp-4);
+  box-shadow: var(--sh-2);
+  max-width: 720px; margin: 0 auto;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.searchbar:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-soft), var(--sh-2);
+}
+.searchbar > .ico { color: var(--faint); }
+.searchbar input {
+  flex: 1; min-width: 0; border: none; background: none; outline: none;
+  font-size: 1rem; font-weight: 500; padding: 12px 4px;
+}
+.searchbar input::placeholder { color: var(--faint); }
+.btn-clear {
+  width: 34px; height: 34px; display: none; place-items: center;
+  border-radius: var(--r-full); color: var(--muted);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn-clear:hover { background: var(--surface-3); color: var(--text); }
+.searchbar.has-value .btn-clear { display: grid; }
+
+.btn-go {
+  display: flex; align-items: center; gap: 7px;
+  min-height: 46px; padding: 0 var(--sp-5);
+  border-radius: var(--r-lg);
+  font-weight: 700; font-size: 0.95rem; color: #fff;
+  background: linear-gradient(120deg, var(--primary), var(--primary-2));
+  box-shadow: 0 6px 18px var(--primary-soft);
+  transition: filter var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+}
+.btn-go:hover { filter: brightness(1.08); }
+.btn-go:active { transform: scale(0.97); }
+
+.chips {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2);
+  justify-content: center; margin-top: var(--sp-4);
+}
+.chip {
+  padding: 7px 14px; border-radius: var(--r-full);
+  font-size: 0.84rem; font-weight: 500;
+  color: var(--muted); background: var(--surface);
+  border: 1px solid var(--border);
+  transition: all var(--dur) var(--ease);
+}
+.chip:hover {
+  color: var(--text); background: var(--primary-soft);
+  border-color: var(--primary); transform: translateY(-1px);
+}
+
+/* ============================================================
+   status + notes
+   ============================================================ */
+#status { text-align: center; margin: var(--sp-5) 0 0; color: var(--muted); font-weight: 500; }
+#status:empty { margin: 0; }
+
+.note {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 0 auto; padding: 9px 15px;
+  font-size: 0.85rem; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-full);
+}
+.note.warn { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 34%, transparent); background: color-mix(in srgb, var(--gold) 10%, var(--surface)); }
+.note-block { display: flex; justify-content: center; margin-top: var(--sp-5); }
+.note-block .note { max-width: 76ch; border-radius: var(--r-lg); text-align: left; line-height: 1.5; }
+
+/* ============================================================
+   reveal on scroll
+   ============================================================ */
+.reveal { opacity: 0; transform: translateY(16px); }
+.reveal.shown {
+  animation: reveal var(--dur-slow) var(--ease) forwards;
+  animation-delay: var(--d, 0s);
+}
+@keyframes reveal { to { opacity: 1; transform: none; } }
+
+/* ============================================================
+   skeletons
+   ============================================================ */
+.skeletons { display: grid; gap: var(--sp-4); margin-top: var(--sp-5); }
+.skeletons.grid3 { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.sk {
+  background: linear-gradient(100deg, var(--surface) 30%, var(--surface-3) 50%, var(--surface) 70%);
+  background-size: 220% 100%;
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  animation: shimmer 1.5s linear infinite;
+}
+.sk.tall { height: 268px; }
+.sk.row { height: 150px; }
+@keyframes shimmer { to { background-position: -220% 0; } }
+
+/* ============================================================
+   compare cards
+   ============================================================ */
+.results { display: grid; gap: var(--sp-4); margin-top: var(--sp-5); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-xl);
+  box-shadow: var(--sh-2); overflow: hidden;
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.card:hover { border-color: var(--border-strong); }
+
+.card-top {
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+.card-art {
+  width: 132px; height: 62px; flex: none;
+  object-fit: cover; border-radius: var(--r-md);
+  background: var(--surface-3);
+}
+.card-title { font-weight: 700; font-size: 1.06rem; line-height: 1.3; flex: 1; min-width: 0; }
+
+.verdict {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  padding: 8px 14px; border-radius: var(--r-md);
+  font-weight: 700; font-size: 0.86rem; text-align: right; flex: none;
+}
+.verdict small { font-weight: 500; font-size: 0.76rem; opacity: 0.92; }
+.verdict.steam { background: var(--steam-soft); color: var(--steam); }
+.verdict.gog { background: var(--gog-soft); color: var(--gog); }
+.verdict.same { background: var(--surface-2); color: var(--muted); }
+
+.prices { display: grid; grid-template-columns: 1fr 1px 1fr; }
+.divider { background: var(--border); }
+
+.store { padding: var(--sp-5) var(--sp-4); text-align: center; position: relative; }
+.store-head {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-display);
+  font-weight: 600; font-size: 0.82rem; letter-spacing: 1.4px;
+  text-transform: uppercase; margin-bottom: var(--sp-3);
+}
+.store.steam-col .store-head { color: var(--steam); }
+.store.gog-col .store-head { color: var(--gog); }
+
+.price-now { font-family: var(--font-display); font-size: 1.72rem; font-weight: 700; letter-spacing: -0.5px; }
+.price-old { color: var(--faint); text-decoration: line-through; font-size: 0.92rem; margin-left: 8px; }
+.badge-off {
+  display: inline-block; margin-top: 8px;
+  padding: 3px 10px; border-radius: var(--r-full);
+  background: var(--accent); color: #14172a;
+  font-size: 0.76rem; font-weight: 700;
+}
+.store .na { color: var(--faint); padding: var(--sp-3) 0; font-size: 0.95rem; }
+
+.store-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: var(--sp-3);
+  font-size: 0.84rem; font-weight: 600; color: var(--primary-2);
+  text-decoration: none;
+  transition: gap var(--dur) var(--ease);
+}
+.store-link:hover { gap: 9px; text-decoration: underline; }
+
+/* winner treatment — icon + label, never colour alone */
+.store.win {
+  background: var(--win-soft);
+  padding-top: calc(var(--sp-5) + 22px); /* clears the absolutely-placed Cheapest tag */
+}
+.store.win::before {
+  content: ""; position: absolute; inset: 0;
+  border: 2px solid var(--win); border-radius: var(--r-lg);
+  pointer-events: none;
+}
+.tag-win {
+  display: inline-flex; align-items: center; gap: 5px;
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  padding: 3px 11px; border-radius: var(--r-full);
+  background: var(--win); color: #062b1d;
+  font-size: 0.7rem; font-weight: 800; letter-spacing: 0.6px; text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   favourite button
+   ============================================================ */
+.fav-btn {
+  width: 40px; height: 40px; flex: none;
+  display: grid; place-items: center;
+  border-radius: var(--r-full);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--muted);
+  transition: all var(--dur) var(--ease);
+}
+.fav-btn:hover { color: var(--danger); border-color: var(--danger); transform: scale(1.06); }
+.fav-btn.on { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, var(--surface)); }
+.fav-btn.on .ico { fill: var(--danger); }
+.fav-btn.float {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* ============================================================
+   sale banner
+   ============================================================ */
+.sale-banner {
+  position: relative; overflow: hidden;
+  padding: var(--sp-5) var(--sp-5);
+  border-radius: var(--r-xl); margin-bottom: var(--sp-4);
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--primary-soft) 0%, transparent 58%),
+    radial-gradient(120% 140% at 100% 100%, var(--accent-soft) 0%, transparent 58%),
+    var(--surface);
+  border: 1px solid var(--border);
+}
+.sale-banner h2 {
+  font-family: var(--font-display);
+  display: flex; align-items: center; gap: 10px;
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem); font-weight: 700; letter-spacing: -0.3px;
+}
+.sale-banner h2 .ico { color: var(--accent); width: 24px; height: 24px; }
+.sale-banner p { color: var(--muted); font-size: 0.92rem; margin-top: 6px; }
+
+/* ============================================================
+   genre pills
+   ============================================================ */
+.genres {
+  display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4);
+  overflow-x: auto; padding-bottom: 6px;
+  scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+}
+.genres::-webkit-scrollbar { height: 5px; }
+.genres::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--r-full); }
+.genre {
+  flex: none; padding: 8px 16px; min-height: 38px;
+  border-radius: var(--r-full);
+  font-size: 0.85rem; font-weight: 600; color: var(--muted);
+  background: var(--surface); border: 1px solid var(--border);
+  transition: all var(--dur) var(--ease);
+}
+.genre:hover { color: var(--text); border-color: var(--border-strong); }
+.genre.active {
+  color: #fff; background: linear-gradient(120deg, var(--primary), var(--primary-2));
+  border-color: transparent;
+}
+
+/* ============================================================
+   deals grid
+   ============================================================ */
+.grid {
+  display: grid; gap: var(--sp-4);
+  grid-template-columns: repeat(auto-fill, minmax(228px, 1fr));
+}
+.deal {
+  position: relative; display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  overflow: hidden; box-shadow: var(--sh-1);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.deal:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--sh-3); border-color: var(--border-strong);
+}
+.deal .imgbox {
+  position: relative; aspect-ratio: 16 / 9;
+  background: var(--surface-3); overflow: hidden;
+}
+.deal .imgbox img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform var(--dur-slow) var(--ease);
+}
+.deal:hover .imgbox img { transform: scale(1.05); }
+.corner {
+  position: absolute; top: 10px; left: 10px; z-index: 2;
+  padding: 4px 10px; border-radius: var(--r-full);
+  background: var(--accent); color: #14172a;
+  font-family: var(--font-display);
+  font-size: 0.82rem; font-weight: 700;
+  box-shadow: var(--sh-1);
+}
+.deal .body {
+  display: flex; flex-direction: column; gap: var(--sp-2);
+  padding: var(--sp-4); flex: 1;
+}
+.deal .dname {
+  font-weight: 600; font-size: 0.95rem; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.deal .row { display: flex; align-items: baseline; gap: 8px; margin-top: auto; }
+.deal .pnow { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; }
+.deal .pold { color: var(--faint); text-decoration: line-through; font-size: 0.84rem; }
+.deal .store-link { margin-top: 0; }
+
+.load-more-wrap { display: flex; justify-content: center; margin-top: var(--sp-5); }
+.load-more {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px var(--sp-6); min-height: 48px;
+  border-radius: var(--r-full);
+  font-weight: 600; font-size: 0.92rem;
+  color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-strong);
+  transition: all var(--dur) var(--ease);
+}
+.load-more:hover:not(:disabled) { background: var(--surface-2); transform: translateY(-2px); }
+.load-more:disabled { opacity: 0.5; cursor: default; }
+
+/* ============================================================
+   free for a limited time
+   ============================================================ */
+.tab-free.active {
+  background: linear-gradient(120deg, var(--win), #34c98a);
+  box-shadow: 0 4px 14px var(--win-soft);
+  color: #04281b;
+}
+.tabbar .tab-free.active { color: var(--win); background: none; }
+
+.free-banner {
+  background:
+    radial-gradient(120% 140% at 0% 0%, var(--win-soft) 0%, transparent 58%),
+    radial-gradient(120% 140% at 100% 100%, var(--primary-soft) 0%, transparent 58%),
+    var(--surface);
+  border-color: color-mix(in srgb, var(--win) 32%, transparent);
+}
+.free-banner h2 .ico { color: var(--win); }
+
+.free-group { margin-bottom: var(--sp-6); }
+.group-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 700; letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin-bottom: var(--sp-3);
+}
+.group-head.steam { color: var(--steam); }
+.group-head.gog { color: var(--gog); }
+.group-count {
+  font-size: 0.78rem; font-weight: 700;
+  padding: 2px 9px; border-radius: var(--r-full);
+  background: var(--surface-2); color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.deal.free { border-color: color-mix(in srgb, var(--win) 38%, transparent); }
+.free-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--win); color: #04281b;
+  letter-spacing: 0.5px;
+}
+.free-price { color: var(--win); }
+.giveaway-tag {
+  display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
+  padding: 3px 9px; border-radius: var(--r-full);
+  background: var(--gog-soft); color: var(--gog);
+  font-size: 0.72rem; font-weight: 700;
+}
+
+/* ============================================================
+   regions
+   ============================================================ */
+.region-hero {
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-4); margin-bottom: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-xl);
+}
+.region-hero img { width: 148px; height: 70px; object-fit: cover; border-radius: var(--r-md); flex: none; }
+.region-hero .rname { font-weight: 700; font-size: 1.1rem; }
+
+.region-list { display: grid; gap: var(--sp-2); }
+.region-row {
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.region-row:hover { border-color: var(--border-strong); transform: translateX(3px); }
+.region-row .rank {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center; border-radius: var(--r-full);
+  background: var(--surface-3); color: var(--muted);
+  font-family: var(--font-display); font-weight: 700; font-size: 0.92rem;
+}
+.region-row.r1 .rank { background: var(--gold); color: #2a1e00; }
+.region-row.r2 .rank { background: #c8cee2; color: #1d2233; }
+.region-row.r3 .rank { background: #d9a273; color: #2b1707; }
+.region-row.r1 { border-color: color-mix(in srgb, var(--gold) 42%, transparent); }
+.region-row .flag { font-size: 1.5rem; flex: none; line-height: 1; }
+.region-row .rn { font-weight: 600; }
+.region-row .local { color: var(--muted); font-size: 0.85rem; }
+.region-row .right { margin-left: auto; text-align: right; flex: none; }
+.region-row .usd { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.region-row.saudi { background: var(--win-soft); border-color: color-mix(in srgb, var(--win) 40%, transparent); }
+.region-row.saudi .rank { background: var(--win); color: #062b1d; }
+
+/* ============================================================
+   favourites
+   ============================================================ */
+.fav-row {
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+}
+.fav-row img { width: 108px; height: 52px; object-fit: cover; border-radius: var(--r-sm); flex: none; background: var(--surface-3); }
+.fav-row .fname { font-weight: 600; }
+.fav-row .fmeta { color: var(--muted); font-size: 0.82rem; }
+.fav-row .factions { margin-left: auto; display: flex; gap: var(--sp-2); flex: none; }
+.fbtn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 15px; min-height: 42px;
+  border-radius: var(--r-md);
+  font-size: 0.85rem; font-weight: 600;
+  border: 1px solid var(--border-strong); color: var(--text);
+  background: var(--surface-2);
+  transition: all var(--dur) var(--ease);
+}
+.fbtn.cmp { background: linear-gradient(120deg, var(--primary), var(--primary-2)); color: #fff; border-color: transparent; }
+.fbtn.cmp:hover { filter: brightness(1.08); }
+.fbtn.rm:hover { color: var(--danger); border-color: var(--danger); }
+
+.empty {
+  text-align: center; padding: var(--sp-7) var(--sp-4);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong); border-radius: var(--r-xl);
+}
+.empty .ico { width: 46px; height: 46px; color: var(--faint); margin: 0 auto var(--sp-3); }
+.empty h3 { font-family: var(--font-display); font-size: 1.16rem; font-weight: 700; margin-bottom: 6px; }
+.empty p { color: var(--muted); font-size: 0.94rem; max-width: 46ch; margin-inline: auto; }
+
+/* ============================================================
+   footer
+   ============================================================ */
+footer {
+  max-width: 1180px; margin: var(--sp-7) auto 0;
+  padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border);
+  text-align: center; color: var(--faint);
+  font-size: 0.82rem; line-height: 1.9;
+}
+footer .credit { font-size: 0.94rem; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+footer .heart { color: var(--accent-2); display: inline-block; animation: beat 1.8s ease-in-out infinite; }
+@keyframes beat { 0%, 100% { transform: scale(1); } 14% { transform: scale(1.22); } 28% { transform: scale(1); } }
+
+/* ============================================================
+   mobile tab bar
+   ============================================================ */
+.tabbar {
+  display: none;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border-top: 1px solid var(--border);
+}
+.tabbar .tab {
+  flex: 1; flex-direction: column; gap: 3px;
+  padding: 8px 2px; border-radius: 0; min-height: 100%;
+  font-size: 0.68rem; font-weight: 600;
+  background: none;
+}
+.tabbar .tab.active {
+  background: none; box-shadow: none;
+  color: var(--primary-2);
+}
+.tabbar .tab.active .ico { transform: translateY(-1px); }
+
+/* ============================================================
+   motion layer
+   ============================================================ */
+/* cards arrive with a little scale, not just a slide */
+/* needs an explicit `to`: .reveal's base style is opacity 0, which an
+   implicit end state would animate back to */
+@keyframes reveal-pop {
+  from { opacity: 0; transform: translateY(18px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+.card.reveal.shown, .deal.reveal.shown { animation-name: reveal-pop; }
+
+/* view swap when changing tab / running a new query */
+@keyframes content-in { from { opacity: 0; transform: translateY(12px); } }
+#content.swap { animation: content-in 400ms var(--ease); }
+
+/* favourite heart pop */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+.fav-btn.pop .ico { animation: pop 440ms var(--ease); }
+
+/* winner tag drops in, card breathes */
+@keyframes tag-in { from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.8); } }
+.tag-win { animation: tag-in 440ms var(--ease) 140ms backwards; }
+
+@keyframes win-glow {
+  0%, 100% { box-shadow: inset 0 0 0 0 transparent; }
+  50% { box-shadow: inset 0 0 26px -6px color-mix(in srgb, var(--win) 55%, transparent); }
+}
+.store.win { animation: win-glow 3.4s ease-in-out infinite; }
+
+/* prices settle in just after the card */
+@keyframes price-in { from { opacity: 0; transform: translateY(7px); } }
+.price-now, .pnow { animation: price-in 460ms var(--ease) 150ms backwards; }
+
+/* sweep of light across the search button on hover */
+.btn-go { position: relative; overflow: hidden; }
+.btn-go::after {
+  content: ""; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.4) 50%, transparent 80%);
+}
+.btn-go:hover::after { animation: sweep 720ms var(--ease); }
+@keyframes sweep { to { transform: translateX(120%); } }
+
+/* active tab icon gives a small nudge */
+@keyframes nudge { 50% { transform: translateY(-3px) scale(1.14); } }
+.tab.active .ico { animation: nudge 420ms var(--ease); }
+
+/* chips cascade in */
+.chips .chip { animation: enter 460ms var(--ease) backwards; animation-delay: var(--d, 0s); }
+
+/* genre pills slide in */
+.genres .genre { animation: enter 420ms var(--ease) backwards; animation-delay: var(--d, 0s); }
+
+/* sale banner sparkle */
+@keyframes twinkle { 0%, 100% { opacity: 1; transform: rotate(0) scale(1); } 50% { opacity: 0.65; transform: rotate(12deg) scale(1.14); } }
+.sale-banner h2 .ico { animation: twinkle 2.6s ease-in-out infinite; }
+
+/* ============================================================
+   responsive
+   ============================================================ */
+@media (max-width: 1080px) {
+  .tab span { display: none; }
+  .tab { padding: 10px 13px; }
+}
+
+@media (max-width: 760px) {
+  :root { --sp-6: 24px; --sp-7: 36px; }
+
+  .topbar .tabs { display: none; }
+  .tabbar { display: flex; }
+  .tabbar .tab span { display: block; }
+
+  body { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }
+  .wrap { padding-top: var(--sp-5); }
+
+  .card-top { flex-wrap: wrap; }
+  .card-art { width: 96px; height: 46px; }
+  .card-title { flex: 1 1 100%; order: 3; }
+  .verdict { align-items: flex-start; text-align: left; flex: 1 1 100%; order: 4; }
+
+  .prices { grid-template-columns: 1fr; }
+  .divider { height: 1px; }
+
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--sp-3); }
+  .deal .body { padding: var(--sp-3); }
+
+  .region-hero { flex-wrap: wrap; }
+  .region-hero img { width: 100%; height: 128px; }
+  .region-row { flex-wrap: wrap; gap: var(--sp-3); }
+  .region-row .right { width: 100%; margin-left: 50px; text-align: left; }
+
+  .fav-row { flex-wrap: wrap; }
+  .fav-row .factions { width: 100%; margin-left: 0; }
+  .fav-row .fbtn { flex: 1; justify-content: center; }
+
+  .searchbar { padding-left: var(--sp-3); }
+  .btn-go span { display: none; }
+  .btn-go { padding: 0 var(--sp-4); }
+}
+
+@media (max-width: 420px) {
+  .wordmark { font-size: 1.12rem; }
+  .brand-badge { width: 44px; height: 44px; }
+  /* six destinations have to share the bar */
+  .tabbar .tab { font-size: 0.6rem; padding: 8px 1px; gap: 2px; min-width: 0; }
+  .tabbar .tab .ico { width: 18px; height: 18px; }
+  .tabbar .tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .bar-inner { padding: 0 var(--sp-3); gap: var(--sp-2); }
+}
+
+/* ============================================================
+   reduced motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .bg-fx span { animation: none; }
+}
+</style>
 </head>
 <body>
 
@@ -197,6 +1112,644 @@
   <button class="tab" data-mode="favs"><svg class="ico" aria-hidden="true"><use href="#i-heart" /></svg><span>Favorites</span></button>
 </nav>
 
-<script src="app.js?v=8"></script>
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const curSel = $("cur");
+const statusEl = $("status");
+const contentEl = $("content");
+const searchArea = $("searchArea");
+const searchInput = $("q");
+const chips = $("chips");
+const heroTitle = $("heroTitle");
+const heroSub = $("heroSub");
+
+let mode = "search";
+let deals = { genre: "all", start: 0, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale" };
+let gogSt = { genre: "all", page: 1, total: 0, items: [], sym: "$", pos: "before", saleName: "Sale", converted: false };
+let favIndex = {};
+
+/* ---------- helpers ---------- */
+const esc = (s) => String(s ?? "")
+  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+  .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+const safeUrl = (u) => /^https:\/\//.test(String(u || "")) ? esc(u) : "#";
+
+const icon = (name, cls) =>
+  '<svg class="ico ' + (cls || "") + '" aria-hidden="true"><use href="#i-' + name + '" /></svg>';
+
+/* decimal places for the active currency — JPY has none */
+let curDec = 2;
+const money = (n, sym, pos) =>
+  n == null ? "—" : pos === "after" ? n.toFixed(curDec) + " " + sym : sym + n.toFixed(curDec);
+
+const priceHTML = (n, sym, pos, cls) =>
+  '<span class="' + cls + ' num">' + money(n, sym, pos) + "</span>";
+
+/* swap the content area in with an animation */
+function paint(html) {
+  contentEl.innerHTML = html;
+  contentEl.classList.remove("swap");
+  void contentEl.offsetWidth; // force reflow so the animation restarts
+  contentEl.classList.add("swap");
+  staggerGenres();
+}
+
+function stagger(nodes, step) {
+  nodes.forEach((el, i) => el.style.setProperty("--d", (i * (step || 0.03)).toFixed(3) + "s"));
+}
+function staggerGenres() {
+  stagger([...contentEl.querySelectorAll(".genre")], 0.025);
+}
+
+/* ---------- theme ---------- */
+const themeBtn = $("themeBtn");
+let theme;
+try { theme = localStorage.getItem("gp:theme"); } catch (e) {}
+if (!theme) theme = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+
+function applyTheme() {
+  document.documentElement.dataset.theme = theme;
+  themeBtn.textContent = theme === "dark" ? "🌙" : "☀️";
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", theme === "dark" ? "#0a0c18" : "#e7e4f7");
+  try { localStorage.setItem("gp:theme", theme); } catch (e) {}
+}
+themeBtn.addEventListener("click", () => {
+  theme = theme === "dark" ? "light" : "dark";
+  applyTheme();
+});
+applyTheme();
+
+/* ---------- favorites ---------- */
+function loadFavs() {
+  try { return JSON.parse(localStorage.getItem("gp:favs")) || []; }
+  catch (e) { return []; }
+}
+function saveFavs(list) {
+  try { localStorage.setItem("gp:favs", JSON.stringify(list.slice(0, 100))); } catch (e) {}
+  favIndex = {};
+  for (const f of list) favIndex[f.name.toLowerCase()] = true;
+}
+saveFavs(loadFavs());
+
+const isFav = (name) => !!favIndex[String(name).toLowerCase()];
+
+function toggleFav(item) {
+  const list = loadFavs();
+  const k = item.name.toLowerCase();
+  const i = list.findIndex((f) => f.name.toLowerCase() === k);
+  if (i >= 0) list.splice(i, 1);
+  else list.unshift({
+    name: item.name, image: item.image || null, url: item.url || null,
+    price: item.price || null, at: Date.now(),
+  });
+  saveFavs(list);
+  return i < 0;
+}
+
+function favBtnHTML(name, cls) {
+  const on = isFav(name);
+  return '<button class="fav-btn ' + (cls || "") + (on ? " on" : "") + '"' +
+    ' data-fav="' + esc(name) + '"' +
+    ' aria-label="' + (on ? "Remove from" : "Add to") + ' favorites"' +
+    ' aria-pressed="' + on + '">' + icon("heart", "ico-sm") + "</button>";
+}
+
+/* ---------- item registry (favoriting works from any view) ---------- */
+const itemReg = {};
+function regItem(name, image, url, price) {
+  itemReg[String(name).toLowerCase()] = { name, image, url, price };
+}
+
+/* ---------- scroll reveal ---------- */
+const io = new IntersectionObserver((entries) => {
+  for (const e of entries) {
+    if (e.isIntersecting) { e.target.classList.add("shown"); io.unobserve(e.target); }
+  }
+}, { threshold: 0.08 });
+
+function observeReveals() {
+  contentEl.querySelectorAll(".reveal").forEach((el, i) => {
+    if (el.getBoundingClientRect().bottom < 0) { el.classList.add("shown"); return; }
+    el.style.setProperty("--d", (Math.min(i % 6, 5) * 0.05) + "s");
+    io.observe(el);
+  });
+}
+
+/* ---------- status / loading ---------- */
+function noteHTML(text, kind) {
+  return '<span class="note ' + (kind === "warn" ? "warn" : "") + '">' +
+    icon(kind === "warn" ? "alert" : "info", "ico-sm") + "<span>" + text + "</span></span>";
+}
+
+function setBusy(msg, kind) {
+  statusEl.textContent = msg;
+  const n = kind === "grid" ? 8 : 3;
+  const cls = kind === "grid" ? "tall" : "row";
+  contentEl.innerHTML =
+    '<div class="skeletons ' + (kind === "grid" ? "grid3" : "") + '">' +
+    Array.from({ length: n }, () => '<div class="sk ' + cls + '"></div>').join("") +
+    "</div>";
+}
+function clearAll() { contentEl.innerHTML = ""; statusEl.textContent = ""; }
+
+const NET_ERROR = "Couldn't reach the server. Make sure it's running.";
+
+/* ---------- compare view ---------- */
+function storeHTML(kind, data, sym, pos, isWinner) {
+  const label = kind === "steam" ? "Steam" : "GOG";
+  const head = '<div class="store-head">' + icon(kind === "steam" ? "flame" : "tag", "ico-sm") + label + "</div>";
+
+  if (!data) {
+    return '<div class="store ' + kind + '-col">' + head +
+      '<div class="na">Not available</div></div>';
+  }
+
+  const old = data.base && data.discount > 0 ? priceHTML(data.base, sym, pos, "price-old") : "";
+  const off = data.discount > 0 ? '<div class="badge-off num">-' + data.discount + "%</div>" : "";
+  const win = isWinner ? '<span class="tag-win">' + icon("check", "ico-sm") + "Cheapest</span>" : "";
+
+  return '<div class="store ' + kind + "-col" + (isWinner ? " win" : "") + '">' + win + head +
+    "<div>" + priceHTML(data.final, sym, pos, "price-now") + old + "</div>" + off +
+    '<div><a class="store-link" href="' + safeUrl(data.url) + '" target="_blank" rel="noopener noreferrer">' +
+    "Open store page" + icon("out", "ico-sm") + "</a></div></div>";
+}
+
+function verdictHTML(row, sym, pos) {
+  if (!row.steam || !row.gog) {
+    return '<div class="verdict same">Available on<small>' +
+      (row.steam ? "Steam only" : "GOG only") + "</small></div>";
+  }
+  if (!row.cheaper) return '<div class="verdict same">Free / no price</div>';
+  if (row.cheaper === "same") return '<div class="verdict same">Same price<small>on both stores</small></div>';
+  const who = row.cheaper === "steam" ? "Steam" : "GOG";
+  return '<div class="verdict ' + row.cheaper + '">' + who + " is cheaper" +
+    '<small>You save ' + money(row.diff, sym, pos) + "</small></div>";
+}
+
+function renderSearch(data) {
+  const rows = data.results || [];
+  if (!rows.length) { statusEl.textContent = "No results found for that game."; return; }
+
+  let notes = "";
+  if (data.gogError) notes += noteHTML("GOG prices are unavailable right now — showing Steam only. Try again shortly.", "warn");
+  if (data.converted) notes += noteHTML("GOG prices are converted from USD at the current exchange rate.");
+  statusEl.innerHTML = notes;
+
+  const sym = data.symbol, pos = data.pos;
+  const html = rows.map((row) => {
+    const best = row.steam && row.steam.final != null ? row.steam : row.gog;
+    regItem(row.name, row.image, (row.steam || row.gog || {}).url,
+      best && best.final != null ? money(best.final, sym, pos) : null);
+
+    const img = row.image
+      ? '<img class="card-art" src="' + safeUrl(row.image) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()" />'
+      : "";
+
+    return '<article class="card reveal">' +
+      '<div class="card-top">' + img +
+      '<h2 class="card-title">' + esc(row.name) + "</h2>" +
+      verdictHTML(row, sym, pos) + favBtnHTML(row.name) +
+      "</div>" +
+      '<div class="prices">' +
+      storeHTML("steam", row.steam, sym, pos, row.cheaper === "steam") +
+      '<div class="divider"></div>' +
+      storeHTML("gog", row.gog, sym, pos, row.cheaper === "gog") +
+      "</div></article>";
+  }).join("");
+
+  paint('<div class="results">' + html + "</div>");
+  observeReveals();
+}
+
+/* ---------- deals ---------- */
+function dealCardHTML(it, sym, pos) {
+  regItem(it.name, it.image, it.url, money(it.final, sym, pos));
+  const img = it.image
+    ? '<div class="imgbox"><img src="' + safeUrl(it.image) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()" /></div>'
+    : "";
+  const old = it.base ? priceHTML(it.base, sym, pos, "pold") : "";
+  return '<article class="deal reveal">' +
+    favBtnHTML(it.name, "float") +
+    '<span class="corner num">-' + (it.discount || 0) + "%</span>" + img +
+    '<div class="body">' +
+    '<h3 class="dname">' + esc(it.name) + "</h3>" +
+    '<div class="row">' + priceHTML(it.final, sym, pos, "pnow") + old + "</div>" +
+    '<a class="store-link" href="' + safeUrl(it.url) + '" target="_blank" rel="noopener noreferrer">' +
+    "Open store page" + icon("out", "ico-sm") + "</a>" +
+    "</div></article>";
+}
+
+function saleBannerHTML(name, subtitle) {
+  return '<div class="sale-banner reveal">' +
+    "<h2>" + icon("spark") + esc(name) + "</h2>" +
+    "<p>" + subtitle + "</p></div>";
+}
+
+const GENRE_LABELS = {
+  all: "All", action: "Action", rpg: "RPG", adventure: "Adventure",
+  strategy: "Strategy", simulation: "Simulation", shooter: "Shooter",
+  horror: "Horror", racing: "Racing", sports: "Sports", indie: "Indie", casual: "Casual",
+};
+const GOG_GENRE_LABELS = {
+  all: "All", action: "Action", adventure: "Adventure", rpg: "RPG",
+  strategy: "Strategy", simulation: "Simulation", shooter: "Shooter",
+  horror: "Horror", racing: "Racing", sports: "Sports", puzzle: "Puzzle", platformer: "Platformer",
+};
+
+function genrePillsHTML(labels, active) {
+  return '<div class="genres" role="tablist" aria-label="Game genres">' +
+    Object.keys(labels).map((g) =>
+      '<button class="genre' + (active === g ? " active" : "") + '" data-genre="' + g + '"' +
+      ' role="tab" aria-selected="' + (active === g) + '">' + labels[g] + "</button>"
+    ).join("") + "</div>";
+}
+
+function loadMoreHTML(shown, total) {
+  if (shown >= total) return "";
+  return '<div class="load-more-wrap"><button class="load-more">' +
+    icon("down", "ico-sm") + "Load more (" + (total - shown).toLocaleString("en-US") + " left)</button></div>";
+}
+
+function renderSteamDeals() {
+  paint(
+    saleBannerHTML(deals.saleName, deals.total.toLocaleString("en-US") + " discounted games on Steam · updates automatically") +
+    genrePillsHTML(GENRE_LABELS, deals.genre) +
+    '<div class="grid">' + deals.items.map((it) => dealCardHTML(it, deals.sym, deals.pos)).join("") + "</div>" +
+    loadMoreHTML(deals.items.length, deals.total)
+  );
+  observeReveals();
+}
+
+function renderGogDeals() {
+  if (!gogSt.items.length) {
+    statusEl.textContent = "No deals in this genre right now.";
+    paint(genrePillsHTML(GOG_GENRE_LABELS, gogSt.genre));
+    return;
+  }
+  statusEl.innerHTML = gogSt.converted
+    ? noteHTML("Prices converted from USD at the current exchange rate.") : "";
+  paint(
+    saleBannerHTML(gogSt.saleName, gogSt.total.toLocaleString("en-US") + " discounted games on GOG · updates automatically") +
+    genrePillsHTML(GOG_GENRE_LABELS, gogSt.genre) +
+    '<div class="grid">' + gogSt.items.map((it) => dealCardHTML(it, gogSt.sym, gogSt.pos)).join("") + "</div>" +
+    loadMoreHTML(gogSt.items.length, gogSt.total)
+  );
+  observeReveals();
+}
+
+/* ---------- free-for-a-limited-time view ---------- */
+function freeCardHTML(it, sym, pos) {
+  regItem(it.name, it.image, it.url, "Free");
+  const img = it.image
+    ? '<div class="imgbox"><img src="' + safeUrl(it.image) + '" alt="" loading="lazy" decoding="async" onerror="this.parentNode.remove()" /></div>'
+    : "";
+  // base is unknown for some promos — only strike it out when we have it
+  const was = it.base ? '<span class="pold num">' + money(it.base, sym, pos) + "</span>" : "";
+  const gift = it.giveaway ? '<span class="giveaway-tag">' + icon("gift", "ico-sm") + "Giveaway</span>" : "";
+  return '<article class="deal free reveal">' +
+    favBtnHTML(it.name, "float") +
+    '<span class="corner free-badge">' + icon("gift", "ico-sm") + "FREE</span>" + img +
+    '<div class="body">' +
+    '<h3 class="dname">' + esc(it.name) + "</h3>" + gift +
+    '<div class="row"><span class="pnow free-price">Free to keep</span>' + was + "</div>" +
+    '<a class="store-link" href="' + safeUrl(it.url) + '" target="_blank" rel="noopener noreferrer">' +
+    "Claim on " + (it.store === "steam" ? "Steam" : "GOG") + icon("out", "ico-sm") + "</a>" +
+    "</div></article>";
+}
+
+function freeGroupHTML(store, items, sym, pos) {
+  if (!items.length) return "";
+  const label = store === "steam" ? "Steam" : "GOG";
+  return '<section class="free-group">' +
+    '<h3 class="group-head ' + store + '">' + icon(store === "steam" ? "flame" : "tag", "ico-sm") +
+    label + '<span class="group-count num">' + items.length + "</span></h3>" +
+    '<div class="grid">' + items.map((it) => freeCardHTML(it, sym, pos)).join("") + "</div></section>";
+}
+
+function renderFree(data) {
+  const steam = data.steam || [];
+  const gog = data.gog || [];
+
+  let notes = "";
+  if (data.steamError) notes += noteHTML("Couldn't reach Steam just now — showing GOG only.", "warn");
+  if (data.gogError) notes += noteHTML("Couldn't reach GOG just now — showing Steam only.", "warn");
+  statusEl.innerHTML = notes;
+
+  if (!steam.length && !gog.length) {
+    paint('<div class="empty">' + icon("gift") +
+      "<h3>Nothing free right now</h3>" +
+      "<p>No giveaways running on Steam or GOG at the moment. This page re-checks on its own, " +
+      "so look back when the next sale lands — free-to-keep promos usually appear during one.</p></div>");
+    return;
+  }
+
+  const sym = data.symbol, pos = data.pos;
+  paint(
+    '<div class="sale-banner free-banner reveal">' +
+    "<h2>" + icon("gift") + "Free for a limited time</h2>" +
+    "<p>" + (steam.length + gog.length) + " game" + (steam.length + gog.length === 1 ? "" : "s") +
+    " you can claim and keep forever · across Steam and GOG</p></div>" +
+    freeGroupHTML("steam", steam, sym, pos) +
+    freeGroupHTML("gog", gog, sym, pos) +
+    '<div class="note-block">' +
+    noteHTML("Free-to-keep promos end without warning — claim them while they're live. Permanently free-to-play games and demos aren't listed here.") +
+    "</div>"
+  );
+  observeReveals();
+}
+
+/* ---------- favorites view ---------- */
+function renderFavs() {
+  const list = loadFavs();
+  statusEl.innerHTML = "";
+
+  if (!list.length) {
+    paint('<div class="empty">' + icon("heart") +
+      "<h3>No favorites yet</h3>" +
+      "<p>Tap the heart on any game to save it here. No account needed — your list stays on this device.</p></div>");
+    return;
+  }
+
+  const rows = list.map((f) => {
+    regItem(f.name, f.image, f.url, f.price);
+    const img = f.image
+      ? '<img src="' + safeUrl(f.image) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()" />' : "";
+    const meta = (f.price ? f.price + " when saved · " : "") +
+      new Date(f.at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return '<div class="fav-row reveal">' + img +
+      "<div><div class='fname'>" + esc(f.name) + "</div>" +
+      '<div class="fmeta">' + esc(meta) + "</div></div>" +
+      '<div class="factions">' +
+      '<button class="fbtn cmp" data-cmp="' + esc(f.name) + '">' + icon("compare", "ico-sm") + "Compare now</button>" +
+      '<button class="fbtn rm" data-rm="' + esc(f.name) + '">' + icon("trash", "ico-sm") + "Remove</button>" +
+      "</div></div>";
+  }).join("");
+
+  paint('<div class="results">' + rows + "</div>" +
+    '<div class="note-block">' + noteHTML("Saved locally in your browser — no sign-up, no tracking.") + "</div>");
+  observeReveals();
+}
+
+/* ---------- regions view ---------- */
+function regionRowHTML(r, rankLabel, extraClass) {
+  return '<div class="region-row reveal ' + extraClass + '">' +
+    '<span class="rank">' + rankLabel + "</span>" +
+    '<span class="flag" aria-hidden="true">' + r.flag + "</span>" +
+    "<div><div class='rn'>" + esc(r.name) + "</div>" +
+    '<div class="local num">' + r.local.toFixed(2) + " " + esc(r.currency) +
+    (r.discount ? " · -" + r.discount + "% off" : "") + "</div></div>" +
+    '<div class="right"><div class="usd num">≈ $' + r.usd.toFixed(2) + "</div></div>" +
+    "</div>";
+}
+
+function renderRegions(data) {
+  if (data.error) { statusEl.textContent = data.error; contentEl.innerHTML = ""; return; }
+  statusEl.textContent = "";
+
+  const g = data.game;
+  const hero = '<div class="region-hero reveal">' +
+    (g.image ? '<img src="' + safeUrl(g.image) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()" />' : "") +
+    '<div><div class="rname">' + esc(g.name) + "</div>" +
+    '<a class="store-link" href="' + safeUrl(g.url) + '" target="_blank" rel="noopener noreferrer">' +
+    "View on Steam" + icon("out", "ico-sm") + "</a></div></div>";
+
+  const rows = (data.regions || [])
+    .map((r, i) => regionRowHTML(r, String(i + 1), i === 0 ? "r1" : i === 1 ? "r2" : i === 2 ? "r3" : ""))
+    .join("");
+  const saudi = data.saudi ? regionRowHTML(data.saudi, icon("home", "ico-sm"), "saudi") : "";
+
+  paint(hero + '<div class="region-list">' + rows + saudi + "</div>" +
+    '<div class="note-block">' +
+    noteHTML("Top 5 cheapest Steam regions, converted to USD. Prices are estimates and buying cross-region may require a matching payment method.") +
+    "</div>");
+  observeReveals();
+}
+
+/* ---------- requests ---------- */
+async function doSearch(term) {
+  const q = (term != null ? term : searchInput.value).trim();
+  if (!q) return;
+  searchInput.value = q;
+  syncClearBtn();
+  if (mode === "regions") return loadRegions(q);
+
+  setBusy("Fetching live prices…", "list");
+  try {
+    const r = await fetch("/api/search?q=" + encodeURIComponent(q) + "&cur=" + curSel.value);
+    const data = await r.json();
+    clearAll();
+    if (data.error) { statusEl.textContent = data.error; return; }
+    curDec = data.decimals ?? 2;
+    renderSearch(data);
+  } catch (e) { clearAll(); statusEl.textContent = NET_ERROR; }
+}
+
+async function loadSteamDeals(reset, silent) {
+  if (reset) { deals.start = 0; deals.items = []; }
+  if (!silent) setBusy("Loading " + GENRE_LABELS[deals.genre] + " deals…", "grid");
+  try {
+    const r = await fetch("/api/deals?genre=" + deals.genre + "&start=" + deals.start + "&cur=" + curSel.value);
+    const data = await r.json();
+    if (mode !== "steam") return;
+    clearAll();
+    if (data.error && !data.items.length) { statusEl.textContent = data.error; return; }
+    deals.total = data.total;
+    deals.items = deals.items.concat(data.items);
+    deals.sym = data.symbol; deals.pos = data.pos; deals.saleName = data.saleName;
+    curDec = data.decimals ?? 2;
+    renderSteamDeals();
+  } catch (e) { if (!silent) { clearAll(); statusEl.textContent = NET_ERROR; } }
+}
+
+async function loadGogDeals(reset, silent) {
+  if (reset) { gogSt.page = 1; gogSt.items = []; }
+  if (!silent) setBusy("Loading GOG deals…", "grid");
+  try {
+    const r = await fetch("/api/discounts?platform=gog&genre=" + gogSt.genre + "&page=" + gogSt.page + "&cur=" + curSel.value);
+    const data = await r.json();
+    if (mode !== "gog") return;
+    clearAll();
+    if (data.error && !(data.items || []).length && !gogSt.items.length) { statusEl.textContent = data.error; return; }
+    gogSt.total = data.total || 0;
+    gogSt.items = gogSt.items.concat(data.items || []);
+    gogSt.sym = data.symbol; gogSt.pos = data.pos;
+    gogSt.saleName = data.saleName; gogSt.converted = data.converted;
+    curDec = data.decimals ?? 2;
+    renderGogDeals();
+  } catch (e) { if (!silent) { clearAll(); statusEl.textContent = NET_ERROR; } }
+}
+
+async function loadFree(silent) {
+  if (!silent) setBusy("Checking Steam and GOG for giveaways…", "grid");
+  try {
+    const r = await fetch("/api/free?cur=" + curSel.value);
+    const data = await r.json();
+    if (mode !== "free") return;
+    clearAll();
+    curDec = data.decimals ?? 2;
+    renderFree(data);
+  } catch (e) { if (!silent) { clearAll(); statusEl.textContent = NET_ERROR; } }
+}
+
+async function loadRegions(q) {
+  setBusy("Comparing prices across regions…", "list");
+  try {
+    const r = await fetch("/api/regions?q=" + encodeURIComponent(q));
+    const data = await r.json();
+    clearAll();
+    renderRegions(data);
+  } catch (e) { clearAll(); statusEl.textContent = NET_ERROR; }
+}
+
+/* ---------- modes ---------- */
+const HERO = {
+  search: {
+    title: "Compare game prices across Steam &amp; GOG",
+    sub: "Live prices pulled the moment you search — see which store is cheaper and exactly how much you save.",
+    hint: "Type a game name to compare Steam vs GOG.",
+    placeholder: "Search any game… e.g. Elden Ring",
+  },
+  free: {
+    title: "Free for a limited time",
+    sub: "Games you can claim and keep forever, on Steam and GOG — checked automatically, so grab them before the promo ends.",
+  },
+  steam: {
+    title: "Steam deals, straight from the store",
+    sub: "Every discounted game on Steam right now, filterable by genre and refreshed automatically.",
+  },
+  gog: {
+    title: "GOG deals, DRM-free",
+    sub: "The full GOG discount catalogue, filterable by genre and refreshed automatically.",
+  },
+  regions: {
+    title: "Find the cheapest Steam region",
+    sub: "Compare a game's Steam price across regions and see the top 5 cheapest, converted to USD.",
+    hint: "Type a game to see the top 5 cheapest Steam regions.",
+    placeholder: "Find the cheapest region… e.g. Cyberpunk 2077",
+  },
+  favs: {
+    title: "Your saved games",
+    sub: "Everything you've hearted, stored privately on this device.",
+  },
+};
+
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll(".tab").forEach((t) => {
+    const on = t.dataset.mode === m;
+    t.classList.toggle("active", on);
+    t.setAttribute("aria-current", on ? "page" : "false");
+  });
+
+  const cfg = HERO[m];
+  heroTitle.innerHTML = cfg.title;
+  heroSub.textContent = cfg.sub;
+
+  const showSearch = m === "search" || m === "regions";
+  searchArea.style.display = showSearch ? "flex" : "none";
+  chips.style.display = showSearch ? "flex" : "none";
+  clearAll();
+
+  if (showSearch) {
+    searchInput.placeholder = cfg.placeholder;
+    statusEl.textContent = cfg.hint;
+    const q = searchInput.value.trim();
+    if (m === "regions" && q) loadRegions(q);
+  } else if (m === "favs") {
+    renderFavs();
+  } else if (m === "free") {
+    loadFree();
+  } else if (m === "steam") {
+    loadSteamDeals(true);
+  } else {
+    loadGogDeals(true);
+  }
+}
+
+/* ---------- events ---------- */
+function syncClearBtn() {
+  searchArea.classList.toggle("has-value", searchInput.value.trim().length > 0);
+}
+
+$("go").addEventListener("click", () => doSearch());
+searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") doSearch(); });
+searchInput.addEventListener("input", syncClearBtn);
+$("clearBtn").addEventListener("click", () => {
+  searchInput.value = "";
+  syncClearBtn();
+  searchInput.focus();
+  clearAll();
+  statusEl.textContent = HERO[mode].hint || "";
+});
+
+chips.addEventListener("click", (e) => {
+  const chip = e.target.closest(".chip");
+  if (chip) doSearch(chip.textContent);
+});
+
+document.querySelectorAll(".tab").forEach((t) =>
+  t.addEventListener("click", () => switchMode(t.dataset.mode)));
+
+curSel.addEventListener("change", () => {
+  const q = searchInput.value.trim();
+  if (mode === "search" && q) doSearch(q);
+  else if (mode === "regions" && q) loadRegions(q);
+  else if (mode === "free") loadFree();
+  else if (mode === "steam") loadSteamDeals(true);
+  else if (mode === "gog") loadGogDeals(true);
+});
+
+/* delegated: favorites, genres, load more, favorite row actions */
+contentEl.addEventListener("click", (e) => {
+  const fav = e.target.closest(".fav-btn");
+  if (fav) {
+    const name = fav.dataset.fav;
+    const on = toggleFav(itemReg[name.toLowerCase()] || { name });
+    fav.classList.toggle("on", on);
+    fav.setAttribute("aria-pressed", on);
+    fav.setAttribute("aria-label", (on ? "Remove from" : "Add to") + " favorites");
+    fav.classList.remove("pop");
+    void fav.offsetWidth;
+    fav.classList.add("pop");
+    return;
+  }
+
+  const genre = e.target.closest(".genre");
+  if (genre) {
+    if (mode === "gog") { gogSt.genre = genre.dataset.genre; loadGogDeals(true); }
+    else { deals.genre = genre.dataset.genre; loadSteamDeals(true); }
+    return;
+  }
+
+  const more = e.target.closest(".load-more");
+  if (more) {
+    more.disabled = true;
+    more.textContent = "Loading…";
+    if (mode === "gog") { gogSt.page += 1; loadGogDeals(false, true); }
+    else { deals.start += 48; loadSteamDeals(false, true); }
+    return;
+  }
+
+  const cmp = e.target.closest("[data-cmp]");
+  if (cmp) { switchMode("search"); doSearch(cmp.dataset.cmp); return; }
+
+  const rm = e.target.closest("[data-rm]");
+  if (rm) { toggleFav({ name: rm.dataset.rm }); renderFavs(); return; }
+});
+
+/* deals refresh themselves */
+setInterval(() => {
+  if (mode === "steam") loadSteamDeals(true, true);
+  else if (mode === "gog") loadGogDeals(true, true);
+  else if (mode === "free") loadFree(true);
+}, 20 * 60 * 1000);
+
+stagger([...chips.querySelectorAll(".chip")], 0.025);
+statusEl.textContent = HERO.search.hint;
+</script>
 </body>
 </html>
