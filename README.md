@@ -1,75 +1,66 @@
-# GamePrice · Steam vs GOG 🎮
+# GamePrice — Steam vs GOG
 
-موقع يقارن **السعر الحالي** لأي لعبة بين متجر Steam و متجر GOG،
-مع تصفح خصومات **Summer Sale**، وميزة **مقارنة الريجينات** اللي تعرض
-أرخص ٥ مناطق ستيم لأي لعبة مقارنة بالريجين السعودي 🇸🇦.
+Compare the live price of any game across Steam and GOG, browse both stores'
+current discounts, and find the cheapest Steam region to buy in.
 
-> صنعه **lcvrjl & Claude** · تابعنا على X: [@lcvrjl](https://x.com/lcvrjl)
+Live at <https://game-price-compare.onrender.com>
 
----
+Built by JumanALH.
 
-## ✨ المميزات
+## Features
 
-- **بحث ومقارنة**: اكتب اسم لعبة، تطلع لك على المنصتين مع الفرق والأرخص.
-- **عملات متعددة**: دولار (الأساسي) · يورو · جنيه · ريال · درهم.
-- **Summer Sale**: تبويب مستقل لكل منصة يعرض حتى ٤٨ خصم من أقوى العروض الحالية.
-- **🌍 مقارنة الريجينات**: يجيب سعر اللعبة من ١١ ريجين ستيم (أوكرانيا، تركيا،
-  الأرجنتين، كازاخستان… إلخ)، يحوّلها للدولار، ويعرض **أرخص ٥ ريجينات + السعودية**.
-- **أنيميشن بريميوم**: خلفية متحركة، ظهور تدريجي مع السكرول، تفاعلات hover،
-  وهياكل تحميل (skeletons) — مع احترام إعداد تقليل الحركة.
-- **أمان**: رؤوس حماية (CSP وغيرها)، تحديد معدل الطلبات، تنظيف المدخلات،
-  وتهريب أي نص جاي من الخارج قبل عرضه.
-- **دعم كامل للجوال** وتحسينات أداء و SEO.
+- **Compare** — search a game and see Steam and GOG side by side, with the
+  cheaper store marked and the exact saving.
+- **Free for a limited time** — claim-and-keep giveaways on either store.
+  Only normally-paid games currently at zero; free-to-play titles and demos
+  are excluded.
+- **Store deals** — the full discount catalogue for each store, filterable by
+  genre and paginated.
+- **Regions** — a game's Steam price across 11 regions, converted to USD, with
+  the five cheapest listed alongside Saudi Arabia.
+- **Favorites** — saved in the browser, no account needed.
+- 18 currencies, light and dark themes, and a mobile layout.
 
----
+## Running locally
 
-## 🚀 كيف تشغّله؟ (3 خطوات)
+Requires Node.js 18 or newer.
 
-تحتاج **Node.js نسخة 18 أو أحدث** (من nodejs.org).
+```
+npm install
+npm start
+```
 
-1. افتح مجلد المشروع في الـ Terminal / CMD.
-2. ثبّت المكتبات (مرة وحدة بس):  `npm install`
-3. شغّل الموقع:  `npm start`
+Then open <http://localhost:3000>.
 
-بعدها افتح المتصفح على:  http://localhost:3000
-للإيقاف: Ctrl + C
+## How it works
 
----
+Steam and GOG block browsers from reading their prices directly (CORS), so a
+small Express server sits in between and talks to them on the page's behalf.
 
-## 🧠 كيف يشتغل؟ (بشكل مبسّط)
+- Steam returns prices in the requested currency. GOG always returns USD, so
+  those are converted at the current exchange rate, with fallback rates if the
+  rate API is unavailable.
+- Region prices are fetched per region, converted to USD, then sorted.
+- Responses are cached for a few minutes. GOG rate-limits aggressively, and if
+  it is unreachable the site still renders Steam results.
 
-ستيم و GOG **يمنعون المتصفح** إنه ياخذ الأسعار منهم مباشرة (حماية CORS)،
-فحطّينا **خادم صغير** بينهم يكلّمهم بدالك:
+## Notes
 
-    متصفحك  ──►  خادمنا (server.js)  ──►  Steam
-                                     └──►  GOG
+- Region prices are estimates, and buying cross-region may require a payment
+  method from that region.
+- A game missing from one store means it is not sold there, or is listed under
+  a different name.
+- A personal comparison tool, not affiliated with Valve or GOG.
 
-- الخادم يجيب النتائج من المتجرين ويطابق اللعبة بمقارنة أسمائها.
-- **العملة**: ستيم يعطي السعر بالعملة اللي تختارها مباشرة. أما GOG فيعطي
-  دولار دايم، فنحوّله بسعر الصرف الحالي (ولو فشل التحديث نستخدم أسعار احتياطية).
-- **الريجينات**: نطلب سعر اللعبة من ستيم لكل ريجين على حدة، نحوّل كل عملة
-  محلية للدولار، ونرتّبها من الأرخص. السعودية تظهر دايم كمرجع للمقارنة.
-- **الخصومات**: ندمج كل أقسام العروض الرسمية من كل متجر ونرتبها حسب أعلى خصم.
-- **تخزين مؤقت (cache)**: النتائج تنحفظ لدقائق داخل الخادم — مهم لأن GOG يحجب
-  بسرعة لو انطلبت منه بيانات كثير. ولو تعذّر GOG، الموقع يكمّل ويعرض ستيم.
+## Files
 
----
-
-## ⚠️ ملاحظات مهمة
-
-- أسعار الريجينات **تقريبية** بعد التحويل للدولار، والشراء من ريجين ثاني
-  قد يتطلب وسيلة دفع من نفس المنطقة (قوانين ستيم).
-- أسعار GOG بغير الدولار محوّلة تقريبيًا بسعر الصرف.
-- لو ما ظهرت لعبة على منصة، معناها غير متوفرة عليها أو باسم مختلف.
-- أداة شخصية للمقارنة فقط — غير تابعة لـ Valve أو GOG.
-
----
-
-## 📁 ملفات المشروع
-
-| الملف | وش يسوي |
+| File | Purpose |
 |------|---------|
-| server.js | الخادم — الأسعار، العملات، الخصومات، الريجينات، الحماية، الكاش |
-| public/index.html | الواجهة — التصميم والأنيميشن والتفاعلات |
-| package.json | معلومات المشروع والمكتبات |
-| DEPLOY.md | خطوات النشر المجاني + إبقاء الموقع صاحي |
+| `server.js` | API, currency conversion, deals, regions, caching, security headers |
+| `public/index.html` | The entire front end — markup, styles and script in one file |
+| `public/v0/index.html` | The previous design, kept for reference |
+| `DEPLOY.md` | Deployment steps |
+
+The front end is deliberately a single self-contained file: external
+stylesheets, scripts and images were failing to load for some visitors, so
+everything including the header image is inlined.
